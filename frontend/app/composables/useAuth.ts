@@ -95,5 +95,6 @@ export const useAuth = () => {
     login,
     signup,
     initialize,
+    logout,
   }
 }

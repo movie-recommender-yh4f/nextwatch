@@ -90,6 +90,8 @@ const handleSwipe = (direction: 'left' | 'right') => {
   const currentMovie = movies.value[currentIndex.value]
 
   if (direction === 'right') {
+    if (!currentMovie) return
+
     markAsWatched(currentMovie)
     // dodati animaciju? (trigger)
   } else {
@@ -100,7 +102,7 @@ const handleSwipe = (direction: 'left' | 'right') => {
 }
 
 const openDetails = (movie: Movie) => {
-  if (movie.id === movies.value[currentIndex.value].id) {
+  if (movie.id === movies.value[currentIndex.value]?.id) {
     selectedMovie.value = movie
   }
 }

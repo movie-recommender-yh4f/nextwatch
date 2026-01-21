@@ -8,6 +8,7 @@ import type {
 
 export interface Movie {
   id: number
+  imdb_id?: string | null
   title: string
   poster: string
   rating: number
@@ -51,15 +52,17 @@ export const useMovies = () => {
       genresData.genres.map((g: TMDBGenre) => [g.id, g.name])
     )
 
-    return moviesData.results.map((movie: TMDBMovie) => ({
-      id: movie.id,
-      title: movie.title,
-      poster: movie.poster_path ? `${IMAGE_BASE}${movie.poster_path}` : '',
-      rating: movie.vote_average,
-      year: parseInt(movie.release_date?.split('-')[0] || '0'),
-      genres: movie.genre_ids.map((id) => genreMap.get(id) || 'Unknown'),
-      description: movie.overview,
-    }))
+    return moviesData.results
+      .map((movie: TMDBMovie) => ({
+        id: movie.id,
+        title: movie.title,
+        poster: movie.poster_path ? `${IMAGE_BASE}${movie.poster_path}` : '',
+        rating: Math.round(movie.vote_average * 10) / 10,
+        year: parseInt(movie.release_date?.split('-')[0] || '0'),
+        genres: movie.genre_ids.map((id) => genreMap.get(id) || 'Unknown'),
+        description: movie.overview,
+      }))
+      .slice(0, 20) // limit to first 20 movies
   }
 
   const getMovieDetails = async (movieId: number): Promise<Movie> => {
@@ -74,9 +77,10 @@ export const useMovies = () => {
     const data: TMDBMovieDetails = await response.json()
     return {
       id: data.id,
+      imdb_id: data.imdb_id,
       title: data.title,
       poster: data.poster_path ? `${IMAGE_BASE}${data.poster_path}` : '',
-      rating: data.vote_average,
+      rating: Math.round(data.vote_average * 10) / 10,
       year: parseInt(data.release_date?.split('-')[0] || '0'),
       duration: data.runtime ? `${Math.floor(data.runtime / 60)}h ${data.runtime % 60}m` : 'N/A',
       genres: data.genres.map((g) => g.name),
@@ -125,10 +129,10 @@ export const useMovies = () => {
     },
   ])
 
-  const watchedMovies = useState<Movie[]>('watched', () => [])
+  const watchedMovies = useState<string[]>('watched', () => [])
 
-  const markAsWatched = (movie: Movie) => {
-    watchedMovies.value.push(movie)
+  const markAsWatched = (imdbId: string) => {
+    watchedMovies.value.push(imdbId)
     //zvatu supabase
   }
 

@@ -15,6 +15,7 @@ export interface TMDBMovie {
 
 export interface TMDBMovieDetails {
   id: number
+  imdb_id: string | null
   title: string
   poster_path: string | null
   backdrop_path: string | null
@@ -32,7 +33,6 @@ export interface TMDBMovieDetails {
   adult: boolean
   budget: number
   revenue: number
-  imdb_id: string | null
 }
 
 export interface TMDBGenre {

@@ -22,7 +22,7 @@
           <h1 class="text-3xl font-bold text-white drop-shadow-md">{{ movie.title }}</h1>
           <div class="flex items-center gap-2 text-gray-200 mt-2">
             <span class="bg-red-600 px-2 py-0.5 rounded text-xs font-bold"
-              >{{ movie.rating }} IMDB</span
+              >{{ movie.rating }} TMDB</span
             >
             <span class="text-sm">{{ movie.genres.join(', ') }}</span>
           </div>
@@ -67,11 +67,18 @@
 </template>
 
 <script setup lang="ts">
-import type { Movie } from '~/composables/useMovies'
+import type { Movie, MoviePreview } from '~/composables/useMovies'
+const { getPopularMovies, getMovieDetails, markAsWatched } = useMovies()
+import { ref, computed, onMounted } from 'vue'
+const movies = ref<MoviePreview[]>([])
 
-const { movies, markAsWatched } = useMovies()
-const currentIndex = ref(0)
 const selectedMovie = ref<Movie | null>(null)
+const currentIndex = ref(0)
+
+onMounted(async () => {
+  const fetchedMovies = await getPopularMovies()
+  movies.value = fetchedMovies
+})
 
 const reversedMovies = computed(() => {
   return movies.value.slice(currentIndex.value, currentIndex.value + 2).reverse()
@@ -86,14 +93,25 @@ const getCardStyle = (index: number) => {
   }
 }
 
-const handleSwipe = (direction: 'left' | 'right') => {
+const handleSwipe = async (direction: 'left' | 'right') => {
   const currentMovie = movies.value[currentIndex.value]
+  if (!currentMovie) return
 
   if (direction === 'right') {
-    if (!currentMovie) return
-
-    markAsWatched(currentMovie)
-    // dodati animaciju? (trigger)
+    try {
+      const details = await getMovieDetails(currentMovie.id)
+      if (!details || !details.imdb_id) {
+        console.error('Failed to get IMDB ID')
+        return
+      }
+      markAsWatched(details.imdb_id)
+      // dodati animaciju? (trigger)
+    } catch (error) {
+      console.error('Error fetching movie details:', error)
+      // povecaj index da se ne blokira?
+      currentIndex.value++
+      return
+    }
   } else {
     // preskakanje?
   }
@@ -101,11 +119,18 @@ const handleSwipe = (direction: 'left' | 'right') => {
   currentIndex.value++
 }
 
-const openDetails = (movie: Movie) => {
-  if (movie.id === movies.value[currentIndex.value]?.id) {
-    selectedMovie.value = movie
+const openDetails = async (movie: MoviePreview) => {
+  try {
+    const details = await getMovieDetails(movie.id)
+    selectedMovie.value = details
+  } catch (error) {
+    console.error('Failed to load movie details:', error)
   }
 }
 
-const reset = () => (currentIndex.value = 0)
+const reset = async () => {
+  currentIndex.value = 0
+  const fetchedMovies = await getPopularMovies()
+  movies.value = fetchedMovies
+}
 </script>

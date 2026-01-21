@@ -57,7 +57,7 @@
       </div>
     </div>
 
-    <MovieDetailsModal
+    <MovieDetails
       v-if="selectedMovie"
       :is-open="!!selectedMovie"
       :movie="selectedMovie"

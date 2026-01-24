@@ -128,6 +128,9 @@ def main():
     
     # Add empty keywords column for compatibility with movie format
     df_final['keywords'] = [[] for _ in range(len(df_final))]
+
+    # Add content type
+    df_final['type'] = 'show'
     
     # Reorder columns
     df_final = df_final[[
@@ -143,7 +146,8 @@ def main():
         'original_language',
         'number_of_seasons',
         'number_of_episodes',
-        'is_core'
+        'is_core',
+        'type'
     ]]
     
     # Save processed data

@@ -86,6 +86,10 @@ def main():
 
   print(f"  Similarity matrix computed in {elapsed:.1f} seconds")
   print(f"Matrix shape: {similarity_matrix.shape}")
+  
+  # Apply sequel/franchise boosting
+  print("\n[5.5/6] Applying sequel/franchise boosting...")
+  similarity_matrix = apply_sequel_boost(similarity_matrix, core_df)
 
   # Save similarity matrix
   # treba u supabase kada budemo imali tabelu
@@ -108,9 +112,77 @@ def safe_literal_eval(val):
   except:
     return []
 
+def extract_franchise_name(title):
+  """Extract base franchise name from title (remove Part, Episode, numbers, etc.)"""
+  import re
+  
+  if pd.isna(title):
+    return ""
+  
+  # Convert to lowercase for comparison
+  title_lower = title.lower()
+  
+  # Remove common sequel indicators
+  patterns = [
+    r'\s*part\s+[ivxlcdm0-9]+.*$',      # Part II, Part 2, Part III
+    r'\s*:\s*part\s+[ivxlcdm0-9]+.*$',  # : Part II
+    r'\s*-\s*part\s+[ivxlcdm0-9]+.*$',  # - Part II
+    r'\s*episode\s+[ivxlcdm0-9]+.*$',   # Episode II
+    r'\s*chapter\s+[0-9]+.*$',          # Chapter 2
+    r'\s*[ivxlcdm]+\s*$',               # Roman numerals at end (III, IV)
+    r'\s*[0-9]+\s*$',                   # Numbers at end (2, 3)
+    r'\s*\([0-9]+\)\s*$',               # (2), (3) at end
+  ]
+  
+  base_title = title_lower
+  for pattern in patterns:
+    base_title = re.sub(pattern, '', base_title)
+  
+  return base_title.strip()
+
+def apply_sequel_boost(similarity_matrix, df):
+  """
+  Boost similarity scores for movies that are likely sequels/prequels/in same franchise
+  """
+  print("  Analyzing franchise relationships...")
+  
+  titles = df['title'].values
+  release_dates = df['release_date'].values
+  
+  # Extract franchise names
+  franchise_names = [extract_franchise_name(title) for title in titles]
+  
+  boosted_count = 0
+  
+  # Apply boost
+  for i in range(len(titles)):
+    if not franchise_names[i]:
+      continue
+      
+    for j in range(i + 1, len(titles)):
+      if not franchise_names[j]:
+        continue
+      
+      # Check if same franchise
+      if franchise_names[i] == franchise_names[j] and len(franchise_names[i]) > 3:
+        # Boost the similarity significantly
+        original_score = similarity_matrix[i, j]
+        
+        # Apply boost: multiply by 1.5 and add 0.3 (but cap at 1.0)
+        boosted_score = min(1.0, original_score * 1.5 + 0.3)
+        
+        similarity_matrix[i, j] = boosted_score
+        similarity_matrix[j, i] = boosted_score
+        
+        boosted_count += 1
+  
+  print(f"  Applied franchise boost to {boosted_count} movie pairs")
+  
+  return similarity_matrix
+
 def create_feature_vectors(df):
   """
-  Create feature vectors from genres, keywords, type, rating, popularity, and overview
+  Create feature vectors from multiple features
   
   Features:
   - Genres (one-hot)
@@ -119,7 +191,11 @@ def create_feature_vectors(df):
   - Type (movie vs show)
   - Rating (normalized and weighted)
   - Popularity (normalized and weighted)
-  - Vote count (normalized, to favor well-rated items)
+  - Vote count (normalized)
+  - Release date (year, normalized)
+  - Budget (log-normalized)
+  - Revenue (log-normalized)
+  - Is core (binary)
   """
 
   print("  Creating genre features...")
@@ -171,18 +247,65 @@ def create_feature_vectors(df):
   vote_count_features = df['vote_count'].fillna(1.0).values.reshape(-1, 1)
   vote_count_features = np.log1p(vote_count_features)
   vote_count_features = vote_count_features / np.max(vote_count_features)
+  
+  print("  Creating release date features...")
+  # Extract year from release_date and normalize
+  df['release_year'] = pd.to_datetime(df['release_date'], errors='coerce').dt.year
+  release_year_features = df['release_year'].fillna(2000).values.reshape(-1, 1)
+  # Normalize to 0-1 (assuming range 1900-2026)
+  release_year_features = (release_year_features - 1900) / (2026 - 1900)
+  
+  print("  Creating budget features...")
+  # Budget tier system (better than log normalization)
+  def budget_tier(budget):
+    """Categorize budget into tiers to preserve meaningful differences"""
+    if budget == 0: return 0
+    if budget < 5_000_000: return 1      # Ultra low budget (<$5M)
+    if budget < 20_000_000: return 2     # Low budget ($5-20M)
+    if budget < 50_000_000: return 3     # Medium budget ($20-50M)
+    if budget < 100_000_000: return 4    # High budget ($50-100M)
+    if budget < 200_000_000: return 5    # Very high budget ($100-200M)
+    return 6                              # Blockbuster ($200M+)
+  
+  budget_values = df['budget'].fillna(0) if 'budget' in df.columns else pd.Series([0] * len(df))
+  budget_tiers = budget_values.apply(budget_tier).values.reshape(-1, 1)
+  budget_tiers = budget_tiers / 6.0  # Normalize to 0-1
+  
+  print("  Creating revenue features...")
+  # Revenue tier system (similar to budget)
+  def revenue_tier(revenue):
+    """Categorize revenue into tiers"""
+    if revenue == 0: return 0
+    if revenue < 10_000_000: return 1     # Flop (<$10M)
+    if revenue < 50_000_000: return 2     # Low earner ($10-50M)
+    if revenue < 200_000_000: return 3    # Moderate hit ($50-200M)
+    if revenue < 500_000_000: return 4    # Big hit ($200-500M)
+    if revenue < 1_000_000_000: return 5  # Blockbuster ($500M-1B)
+    return 6                               # Mega blockbuster ($1B+)
+  
+  revenue_values = df['revenue'].fillna(0) if 'revenue' in df.columns else pd.Series([0] * len(df))
+  revenue_tiers = revenue_values.apply(revenue_tier).values.reshape(-1, 1)
+  revenue_tiers = revenue_tiers / 6.0  # Normalize to 0-1
+  
+  print("  Creating is_core features...")
+  # Is core feature (binary)
+  is_core_features = df['is_core'].astype(int).values.reshape(-1, 1)
 
   # Combine all features with weights
-  # mozemo ovo da menjamo kasnije po potrebi
+  # ADJUSTED: Stronger weights for quality metrics, reduced for content similarity
   print("  Combining features with weights...")
   feature_matrix = np.hstack([
     genre_features * 3.0,           # Genre similarity is important
-    keyword_features * 2.0,          # Keywords are important but less than genres
-    overview_features * 4.0,         # NEW: Overview/plot similarity is very important!
+    keyword_features * 2.0,          # Keywords help but less than genres
+    overview_features * 2.0,         # REDUCED from 4.0 - was causing too much anime similarity
     type_features * 1.5,             # Movie vs Show preference
-    rating_features * 3.5,           # INCREASED: Quality matters a lot
-    popularity_features * 1.5,       # NEW: Popular items are more relevant
-    vote_count_features * 1.5        # NEW: Well-voted items are more trustworthy
+    rating_features * 5.0,           # INCREASED from 3.5 - quality is crucial!
+    popularity_features * 2.5,       # INCREASED from 1.5 - popular films matter
+    vote_count_features * 2.0,       # INCREASED from 1.5 - well-voted films preferred
+    release_year_features * 2.0,     # Similar era films
+    budget_tiers * 4.0,              # INCREASED from 1.0 - production scale matters!
+    revenue_tiers * 2.0,             # INCREASED from 1.0 - box office success matters
+    is_core_features * 0.5           # Slight preference for core items
   ])
 
   return feature_matrix
@@ -191,11 +314,20 @@ def save_similarity_matrix(matrix, df, top_n=100):
   """
   Save top N most similar items for each movie/show
   Format: id, similar_id, similarity_score
+  
+  POST-FILTERING: Apply penalties for quality mismatches
+  - Large rating differences (>1.5): multiply by 0.5
+  - Low vote count (<100): multiply by 0.3
+  - Large budget mismatches (>10x or <0.1x): multiply by 0.4
   """
   ids = df['id'].values
+  ratings = df['vote_average'].values
+  vote_counts = df['vote_count'].values
+  budgets = df['budget'].fillna(0).values
   
   results = []
   skipped_null_ids = 0
+  penalties_applied = 0
   
   print(f"  Extracting top {top_n} similar items for each movie/show...")
   for i, item_id in enumerate(ids):
@@ -213,7 +345,39 @@ def save_similarity_matrix(matrix, df, top_n=100):
     # Clip scores to [0, 1] to fix floating point errors
     similarities = np.clip(similarities, 0, 1)
     
-    # Get indices of top N most similar
+    # POST-FILTERING: Apply quality penalties
+    for j in range(len(similarities)):
+      if j == i or similarities[j] < 0:
+        continue
+      
+      original_score = similarities[j]
+      penalty_multiplier = 1.0
+      
+      # Penalty 1: Large rating difference (>1.5 points)
+      rating_diff = abs(ratings[i] - ratings[j])
+      if rating_diff > 1.5:
+        penalty_multiplier *= 0.5
+        penalties_applied += 1
+      
+      # Penalty 2: Low vote count (<100 votes)
+      if vote_counts[j] < 100:
+        penalty_multiplier *= 0.3
+        penalties_applied += 1
+      
+      # Penalty 3: Large budget mismatch (>10x or <0.1x)
+      budget_i = budgets[i]
+      budget_j = budgets[j]
+      if budget_i > 0 and budget_j > 0:
+        budget_ratio = budget_j / budget_i
+        if budget_ratio > 10.0 or budget_ratio < 0.1:
+          penalty_multiplier *= 0.4
+          penalties_applied += 1
+      
+      # Apply combined penalty
+      if penalty_multiplier < 1.0:
+        similarities[j] = original_score * penalty_multiplier
+    
+    # Get indices of top N most similar (AFTER penalties)
     top_indices = np.argsort(similarities)[::-1][:top_n]
     
     # Create rows for each similar item
@@ -242,6 +406,7 @@ def save_similarity_matrix(matrix, df, top_n=100):
   if skipped_null_ids > 0:
     print(f"  Skipped {skipped_null_ids} items with null IDs")
   
+  print(f"  Applied {penalties_applied:,} quality penalties (rating diff, low votes, budget mismatch)")
   print(f"  Saved {len(results_df):,} similarity pairs to '../data/processed/similarity_matrix.csv'")
   print(f"  Score range: [{results_df['similarity_score'].min():.4f}, {results_df['similarity_score'].max():.4f}]")
   print(f"  File size: {len(results_df) * 3 * 8 / 1024 / 1024:.1f} MB (approximate)")

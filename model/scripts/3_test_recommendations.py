@@ -1,11 +1,17 @@
 """
 Test recommendation system by searching for a movie/show and displaying similar items
+
+Usage:
+  python 3_test_recommendations.py                    # Interactive mode
+  python 3_test_recommendations.py "Avatar"           # Search for "Avatar"
+  python 3_test_recommendations.py "Avatar" --auto    # Auto-select first match
 """
 import sys
 sys.path.append('..')
 
 import pandas as pd
 import numpy as np
+import argparse
 
 def load_data():
   """Load similarity matrix and content metadata"""
@@ -110,16 +116,92 @@ def display_recommendations(recommendations):
   print("\n" + "=" * 80)
 
 def main():
+  # Parse command-line arguments
+  parser = argparse.ArgumentParser(description='Test movie/show recommendation system')
+  parser.add_argument('query', nargs='?', help='Movie or show title to search for')
+  parser.add_argument('--auto', action='store_true', help='Automatically select first match')
+  parser.add_argument('--top', type=int, default=20, help='Number of recommendations to show (default: 20)')
+  parser.add_argument('--min-rating', type=float, default=5.5, help='Minimum rating filter (default: 5.5)')
+  args = parser.parse_args()
+  
   # Load data
   sim_df, content_df = load_data()
   
+  # Non-interactive mode if query provided
+  if args.query:
+    search_query = args.query.strip()
+    
+    if not search_query:
+      print("Error: Empty query provided!")
+      return
+    
+    # Search for matches
+    matches = search_by_title(search_query, content_df)
+    
+    if len(matches) == 0:
+      print(f"No matches found for '{search_query}'")
+      return
+    
+    # Display matches
+    print(f"\nFound {len(matches)} match(es):")
+    for i, (idx, item) in enumerate(matches.head(10).iterrows()):
+      year = item['release_date'][:4] if pd.notna(item['release_date']) else 'N/A'
+      print(f"{i+1}. {item['title']} ({year}) - {item['type'].upper()} - Rating: {item['vote_average']:.1f}/10")
+    
+    if len(matches) > 10:
+      print(f"... and {len(matches) - 10} more")
+    
+    # Auto-select first match if --auto flag or only one match
+    if args.auto or len(matches) == 1:
+      selection = 0
+      if len(matches) > 1:
+        print(f"\nAuto-selecting: {matches.iloc[0]['title']}")
+    else:
+      try:
+        selection_input = input(f"\nSelect item (1-{min(len(matches), 10)}): ").strip()
+        selection = int(selection_input) - 1
+        if selection < 0 or selection >= min(len(matches), 10):
+          print("Invalid selection!")
+          return
+      except (ValueError, EOFError, KeyboardInterrupt):
+        print("\nAborted.")
+        return
+    
+    selected_item = matches.iloc[selection]
+    
+    # Display selected item
+    display_item_info(selected_item, content_df)
+    
+    # Get recommendations
+    recommendations = get_recommendations(
+      selected_item['id'], 
+      sim_df, 
+      content_df, 
+      top_n=args.top,
+      min_rating=args.min_rating
+    )
+    
+    if recommendations is None or len(recommendations) == 0:
+      print("\nNo recommendations found for this item!")
+      return
+    
+    # Display recommendations
+    recommendations = recommendations.reset_index(drop=True)
+    display_recommendations(recommendations)
+    return
+  
+  # Interactive mode (original behavior)
   while True:
     print("\n" + "=" * 80)
     print("MOVIE/SHOW RECOMMENDATION SYSTEM")
     print("=" * 80)
     
     # Get user input
-    search_query = input("\nEnter movie/show title (or 'quit' to exit): ").strip()
+    try:
+      search_query = input("\nEnter movie/show title (or 'quit' to exit): ").strip()
+    except (EOFError, KeyboardInterrupt):
+      print("\nGoodbye!")
+      break
     
     if search_query.lower() in ['quit', 'exit', 'q']:
       print("Goodbye!")
@@ -155,9 +237,9 @@ def main():
         if selection < 0 or selection >= min(len(matches), 10):
           print("Invalid selection!")
           continue
-      except ValueError:
-        print("Invalid input!")
-        continue
+      except (ValueError, EOFError, KeyboardInterrupt):
+        print("\nAborted.")
+        break
     
     selected_item = matches.iloc[selection]
     

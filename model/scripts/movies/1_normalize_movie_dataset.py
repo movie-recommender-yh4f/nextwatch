@@ -33,7 +33,9 @@ def main():
     'vote_count',
     'popularity',
     'release_date',
-    'original_language'
+    'original_language',
+    'budget',
+    'revenue'
   ]
   
   df = df[needed_columns].copy()
@@ -135,6 +137,8 @@ def main():
     'popularity',
     'release_date',
     'original_language',
+    'budget',
+    'revenue',
     'is_core',
     'type'
   ]]

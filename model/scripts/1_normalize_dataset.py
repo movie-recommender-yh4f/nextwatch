@@ -95,26 +95,19 @@ def main():
     
     # Mark movies for similarity computation
     print("\n[6/7] Selecting core movies for similarity computation...")
-    # "Core movie criteria:
-    # - At least 50 votes
-    # - Rating >= 5.5
-    # - Popularity >= 5
-    # - Top 20,000 by popularity
+    print("Core movie criteria:")
+    print("  - Top 20,000 movies by popularity")
+    print("  - From all quality movies (regardless of vote count)")
     
     df_filtered['is_core'] = False
     
-    core_candidates = df_filtered[
-        (df_filtered['vote_count'] >= 50) &
-        (df_filtered['vote_average'] >= 5.5) &
-        (df_filtered['popularity'] >= 5)
-    ]
-    
-    # Select top 20k by popularity
-    core_movies = core_candidates.nlargest(20000, 'popularity')
+    # Simply select top 20k by popularity - this ensures popular movies
+    # like Deadpool 3, Avatar 3, etc. are included even without many votes
+    core_movies = df_filtered.nlargest(20000, 'popularity')
     df_filtered.loc[core_movies.index, 'is_core'] = True
     
     core_count = df_filtered['is_core'].sum()
-    print(f"✓ Marked {core_count:,} core movies")
+    print(f"Marked {core_count:,} core movies (highest popularity)")
     
     # Prepare final dataframe with renamed columns
     df_final = df_filtered.copy()

@@ -1,10 +1,5 @@
 """
-Compute cosine similarity matrix for core movies and shows - V2
-Changes from V1:
-- Sentence transformers for semantic overview embedding (replaces TF-IDF)
-- Animation style detection and penalty
-- Popularity-based quality filtering for non-core movies
-- Adjusted feature weights for better recommendations
+Compute cosine similarity matrix for core movies and shows
 """
 import sys
 sys.path.append('..')
@@ -13,9 +8,10 @@ import pandas as pd
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.preprocessing import MultiLabelBinarizer
-from sentence_transformers import SentenceTransformer
+from sklearn.feature_extraction.text import TfidfVectorizer
 import ast
 import json
+# from utils.db import get_db_connection  # Not needed yet
 from datetime import datetime
 
 def main():
@@ -45,7 +41,7 @@ def main():
   print(f"Loaded {len(shows_df):,} shows")
   print(f"Total items: {len(df):,}")
 
-  # Filter only core items
+   # Filter only core items
   print("\n[2/6] Filtering core items...")
   core_df = df[df['is_core'] == True].copy()
   
@@ -63,7 +59,6 @@ def main():
   print(f"Total core items: {len(core_df):,}")
 
   # desavalo se i ovo
-  # moguce da je bio corrupt dataset
   if len(core_df) == 0:
     print("ERROR: No core items found!")
     return
@@ -99,10 +94,7 @@ def main():
   # Save similarity matrix
   # treba u supabase kada budemo imali tabelu
   print("\n[6/6] Saving similarity matrix...")
-  start_time = datetime.now()
   save_similarity_matrix(similarity_matrix, core_df)
-  elapsed = (datetime.now() - start_time).total_seconds()
-  print(f"  Similarity matrix saved in {elapsed:.1f} seconds")
   
   print("\n" + "=" * 60)
   print("SIMILARITY COMPUTATION COMPLETE!")
@@ -220,21 +212,23 @@ def create_feature_vectors(df):
   print(f"    {len(mlb_keywords.classes_)} unique keywords")
   
   print("  Creating overview (description) features...")
-  # Overview features using Sentence Transformers for semantic understanding
+  # Overview features using TF-IDF
   # Fill missing overviews with empty string
   overviews = df['overview'].fillna('').values
   
-  # Load sentence transformer model (lightweight and fast)
-  print("    Loading sentence transformer model...")
-  model = SentenceTransformer('all-MiniLM-L6-v2')
-  
-  # Generate embeddings
-  print("    Generating semantic embeddings for overviews...")
-  overview_features = model.encode(overviews, show_progress_bar=True, batch_size=32)
-  print(f"    {overview_features.shape[1]} semantic features from overviews")
+  # TF-IDF with parameters optimized for movie descriptions
+  tfidf = TfidfVectorizer(
+    max_features=500,        # Limit to top 500 words to avoid overfitting
+    stop_words='english',    # Remove common English words
+    ngram_range=(1, 2),      # Use unigrams and bigrams for better context
+    min_df=2,                # Word must appear in at least 2 documents
+    max_df=0.8               # Ignore words that appear in >80% of documents
+  )
+  overview_features = tfidf.fit_transform(overviews).toarray()
+  print(f"    {overview_features.shape[1]} TF-IDF features from overviews")
 
   print("  Creating type features...")
-  # Type features is_movie (binary)
+  # Type features (binary: is_movie)
   type_features = (df['type'] == 'movie').astype(int).values.reshape(-1, 1)
 
   print("  Creating rating features...")
@@ -296,27 +290,22 @@ def create_feature_vectors(df):
   print("  Creating is_core features...")
   # Is core feature (binary)
   is_core_features = df['is_core'].astype(int).values.reshape(-1, 1)
-  
-  print("  Creating animation detection features...")
-  # Animation detection (binary feature)
-  animation_features = detect_animation(df).reshape(-1, 1)
 
   # Combine all features with weights
-  # V2 WEIGHTS: Adjusted based on testing and user feedback
+  # ADJUSTED: Stronger weights for quality metrics, reduced for content similarity
   print("  Combining features with weights...")
   feature_matrix = np.hstack([
-    genre_features * 4.0,            # UP from 3.0 - genre is crucial
-    keyword_features * 1.5,          # DOWN from 2.0 - less reliable
-    overview_features * 5.0,         # UP from 2.0 - semantic embeddings are high quality!
+    genre_features * 3.0,           # Genre similarity is important
+    keyword_features * 2.0,          # Keywords help but less than genres
+    overview_features * 2.0,         # REDUCED from 4.0 - was causing too much anime similarity
     type_features * 1.5,             # Movie vs Show preference
-    rating_features * 6.0,           # UP from 5.0 - quality is crucial!
-    popularity_features * 3.5,       # UP from 2.5 - popular films are quality indicator
-    vote_count_features * 2.5,       # UP from 2.0 - well-established films
+    rating_features * 5.0,           # INCREASED from 3.5 - quality is crucial!
+    popularity_features * 2.5,       # INCREASED from 1.5 - popular films matter
+    vote_count_features * 2.0,       # INCREASED from 1.5 - well-voted films preferred
     release_year_features * 2.0,     # Similar era films
-    budget_tiers * 4.0,              # KEEP at 4.0 per user feedback
-    revenue_tiers * 2.0,             # Box office success matters
-    is_core_features * 0.5,          # Slight preference for core items
-    animation_features * 3.0         # NEW: Animation style matters
+    budget_tiers * 4.0,              # INCREASED from 1.0 - production scale matters!
+    revenue_tiers * 2.0,             # INCREASED from 1.0 - box office success matters
+    is_core_features * 0.5           # Slight preference for core items
   ])
 
   return feature_matrix
@@ -326,21 +315,15 @@ def save_similarity_matrix(matrix, df, top_n=100):
   Save top N most similar items for each movie/show
   Format: id, similar_id, similarity_score
   
-  V2 POST-FILTERING: Apply penalties for quality mismatches
-  - Animation style mismatch: multiply by 0.3 (configurable)
-  - Large rating differences (> 2.0): multiply by 0.2 (stricter than v1)
-  - Non-core movies with low popularity: multiply by 0.1
-  - Large budget mismatches (> 10x or < 0.1x): multiply by 0.4
+  POST-FILTERING: Apply penalties for quality mismatches
+  - Large rating differences (>1.5): multiply by 0.5
+  - Low vote count (<100): multiply by 0.3
+  - Large budget mismatches (>10x or <0.1x): multiply by 0.4
   """
   ids = df['id'].values
   ratings = df['vote_average'].values
   vote_counts = df['vote_count'].values
   budgets = df['budget'].fillna(0).values
-  popularities = df['popularity'].values
-  is_core = df['is_core'].values
-  
-  # Detect animation for penalty
-  is_animated = detect_animation(df)
   
   results = []
   skipped_null_ids = 0
@@ -362,38 +345,26 @@ def save_similarity_matrix(matrix, df, top_n=100):
     # Clip scores to [0, 1] to fix floating point errors
     similarities = np.clip(similarities, 0, 1)
     
-    # OPTIMIZATION: Only apply penalties to top 250 candidates
-    # This avoids processing 30,000 items for every movie
-    candidate_indices = np.argsort(similarities)[::-1][:250]
-    
     # POST-FILTERING: Apply quality penalties
-    for j in candidate_indices:
-      if j == i or similarities[j] <= 0:
+    for j in range(len(similarities)):
+      if j == i or similarities[j] < 0:
         continue
       
       original_score = similarities[j]
       penalty_multiplier = 1.0
       
-      # Penalty 1: Animation style mismatch (configurable weight)
-      if is_animated[i] != is_animated[j]:
-        penalty_multiplier *= 0.3  # Strong penalty but can be adjusted
-        penalties_applied += 1
-      
-      # Penalty 2: Large rating difference (> 2.0 points) - STRICTER
+      # Penalty 1: Large rating difference (>1.5 points)
       rating_diff = abs(ratings[i] - ratings[j])
-      if rating_diff > 2.0:
-        penalty_multiplier *= 0.2  # Stricter than v1 (was 0.5)
+      if rating_diff > 1.5:
+        penalty_multiplier *= 0.5
         penalties_applied += 1
       
-      # Penalty 3: Non-core movies with low popularity
-      # Core movies already filtered by popularity, so no penalty
-      if not is_core[j]:
-        # Require popularity >= 15 AND (vote_count >= 100 OR budget > 0)
-        if popularities[j] < 15 or (vote_counts[j] < 100 and budgets[j] == 0):
-          penalty_multiplier *= 0.1  # Very strong penalty
-          penalties_applied += 1
+      # Penalty 2: Low vote count (<100 votes)
+      if vote_counts[j] < 100:
+        penalty_multiplier *= 0.3
+        penalties_applied += 1
       
-      # Penalty 4: Large budget mismatch (> 10x or < 0.1x)
+      # Penalty 3: Large budget mismatch (>10x or <0.1x)
       budget_i = budgets[i]
       budget_j = budgets[j]
       if budget_i > 0 and budget_j > 0:
@@ -402,7 +373,7 @@ def save_similarity_matrix(matrix, df, top_n=100):
           penalty_multiplier *= 0.4
           penalties_applied += 1
       
-      # Apply combined penalty (update score in place)
+      # Apply combined penalty
       if penalty_multiplier < 1.0:
         similarities[j] = original_score * penalty_multiplier
     
@@ -435,38 +406,10 @@ def save_similarity_matrix(matrix, df, top_n=100):
   if skipped_null_ids > 0:
     print(f"  Skipped {skipped_null_ids} items with null IDs")
   
-  print(f"  Applied {penalties_applied:,} quality penalties (animation, rating diff, popularity, budget)")
+  print(f"  Applied {penalties_applied:,} quality penalties (rating diff, low votes, budget mismatch)")
   print(f"  Saved {len(results_df):,} similarity pairs to '../data/processed/similarity_matrix.csv'")
   print(f"  Score range: [{results_df['similarity_score'].min():.4f}, {results_df['similarity_score'].max():.4f}]")
   print(f"  File size: {len(results_df) * 3 * 8 / 1024 / 1024:.1f} MB (approximate)")
-
-def detect_animation(df):
-  """
-  Detect if a movie/show is animated based on keywords and overview
-  Returns binary array (1 = animated, 0 = live-action)
-  """
-  animation_keywords = ['anime', 'animation', 'animated', 'cartoon', 'cgi', 'pixar', 'dreamworks']
-  
-  is_animated = np.zeros(len(df), dtype=int)
-  
-  for i, (idx, row) in enumerate(df.iterrows()):
-    # Check keywords
-    keywords_lower = ' '.join([str(k).lower() for k in row['keywords']]) if isinstance(row['keywords'], list) else ''
-    
-    # Check overview
-    overview_lower = str(row['overview']).lower() if pd.notna(row['overview']) else ''
-    
-    # Check genres (Animation genre is most reliable)
-    genres_lower = ' '.join([str(g).lower() for g in row['genres']]) if isinstance(row['genres'], list) else ''
-    
-    # Combine all text
-    combined_text = keywords_lower + ' ' + overview_lower + ' ' + genres_lower
-    
-    # Check for animation indicators
-    if any(kw in combined_text for kw in animation_keywords):
-      is_animated[i] = 1
-  
-  return is_animated
 
 if __name__ == "__main__":
   main()

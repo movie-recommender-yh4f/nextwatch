@@ -1,40 +1,42 @@
 <template>
-  <div class="min-h-screen flex items-center justify-center bg-gray-100">
-    <div class="bg-white p-8 rounded shadow-md w-full max-w-md">
+  <div class="min-h-screen flex items-center justify-center bg-gray-900">
+    <div
+      class="bg-gray-800 text-white p-8 rounded-3xl shadow-2xl border border-gray-700 w-full max-w-md"
+    >
       <h1 class="text-2xl font-bold mb-6 text-center">Set New Password</h1>
 
       <!-- Error message -->
-      <div v-if="errorMessage" class="bg-red-100 text-red-700 p-3 rounded mb-4">
+      <div v-if="errorMessage" class="bg-red-900/60 text-red-300 p-3 rounded mb-4">
         {{ errorMessage }}
       </div>
 
       <!-- Success message -->
-      <div v-if="successMessage" class="bg-green-100 text-green-700 p-3 rounded mb-4">
+      <div v-if="successMessage" class="bg-green-900/60 text-green-300 p-3 rounded mb-4">
         {{ successMessage }}
       </div>
 
       <form @submit.prevent="handlePasswordUpdate">
         <div class="mb-4">
-          <label class="block text-gray-700 mb-2">New Password</label>
+          <label class="block text-gray-400 mb-2">New Password</label>
           <input
             v-model="newPassword"
             type="password"
             required
             minlength="6"
-            class="w-full px-3 py-2 border border-gray-300 rounded"
+            class="w-full bg-gray-900 text-white px-3 py-2 border border-gray-700 rounded-xl placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500"
             placeholder="••••••••"
           />
-          <p class="text-sm text-gray-500 mt-1">Minimum 6 characters</p>
+          <p class="text-sm text-gray-400 mt-1">Minimum 6 characters</p>
         </div>
 
         <div class="mb-6">
-          <label class="block text-gray-700 mb-2">Confirm Password</label>
+          <label class="block text-gray-400 mb-2">Confirm Password</label>
           <input
             v-model="confirmPassword"
             type="password"
             required
             minlength="6"
-            class="w-full px-3 py-2 border border-gray-300 rounded"
+            class="w-full bg-gray-900 text-white px-3 py-2 border border-gray-700 rounded-xl placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500"
             placeholder="••••••••"
           />
         </div>
@@ -42,14 +44,14 @@
         <button
           type="submit"
           :disabled="isLoading"
-          class="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600 disabled:bg-gray-400"
+          class="w-full bg-red-600 text-white py-3 rounded-xl hover:bg-red-500 disabled:bg-gray-700 transition"
         >
           {{ isLoading ? 'Updating...' : 'Update Password' }}
         </button>
       </form>
 
       <div class="mt-4 text-center">
-        <button @click="router.push('/login')" type="button" class="text-blue-500 hover:underline">
+        <button @click="router.push('/login')" type="button" class="text-red-500 hover:underline">
           Back to Login
         </button>
       </div>

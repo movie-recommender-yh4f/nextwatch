@@ -19,11 +19,18 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  const allowedTypes = ['text/csv', 'application/json']
-  if (file.type && !allowedTypes.includes(file.type)) {
+  const allowedTypes = ['text/csv', 'application/json', 'application/gzip', 'application/x-gzip']
+  const allowedExtensions = ['.csv', '.json', '.gz']
+
+  const hasValidType = !file.type || allowedTypes.includes(file.type)
+  const hasValidExtension = allowedExtensions.some((ext) =>
+    file.filename?.toLowerCase().endsWith(ext)
+  )
+
+  if (!hasValidType && !hasValidExtension) {
     throw createError({
       statusCode: 400,
-      message: 'Unsupported file type. Please upload a CSV or JSON file.',
+      message: 'Unsupported file type. Please upload a CSV, JSON, or gzipped file.',
     })
   }
 

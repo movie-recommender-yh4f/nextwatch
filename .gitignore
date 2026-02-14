@@ -1,22 +1,17 @@
-# Nuxt dev/build outputs
-.output
-.data
-.nuxt
-.nitro
-.cache
-dist
+# ml-pipeline/.gitignore
 
-# Node dependencies
-node_modules
+# Virtual environment
+.venv/
+.env/
 
-# Logs
-logs
-*.log
+# Dataset files
+data/
+*.csv
+*.json
+*.parquet
 
-# Misc
-.DS_Store
-
-# Local env files
+# Python
+__pycache__/
+*.pyc
 .env
-.env.*
-!.env.example
+venv/

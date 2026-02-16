@@ -1,0 +1,15 @@
+# Virtual environment
+.venv/
+.env/
+
+# Dataset files
+data/
+*.csv
+*.json
+*.parquet
+
+# Python
+__pycache__/
+*.pyc
+.env
+venv/

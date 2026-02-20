@@ -1,29 +1,29 @@
 <template>
-  <div class="min-h-screen flex items-center justify-center bg-gray-100">
-    <div class="bg-white p-8 rounded shadow-md w-full max-w-md">
+  <div class="min-h-screen flex items-center justify-center bg-gray-900">
+    <div class="bg-gray-800 text-white p-8 rounded-3xl shadow-2xl border border-gray-700 w-full max-w-md">
       <h1 class="text-2xl font-bold mb-6 text-center">
         {{ isResetMode ? 'Reset Password' : isLoginMode ? 'Login' : 'Register' }}
       </h1>
 
       <!-- Error message -->
-      <div v-if="errorMessage" class="bg-red-100 text-red-700 p-3 rounded mb-4">
+      <div v-if="errorMessage" class="bg-red-900/60 text-red-300 p-3 rounded mb-4">
         {{ errorMessage }}
       </div>
 
       <!-- Success message -->
-      <div v-if="successMessage" class="bg-green-100 text-green-700 p-3 rounded mb-4">
+      <div v-if="successMessage" class="bg-green-900/60 text-green-300 p-3 rounded mb-4">
         {{ successMessage }}
       </div>
 
       <!-- Reset Password Form -->
       <form v-if="isResetMode" @submit.prevent="handleResetPassword">
         <div class="mb-4">
-          <label class="block text-gray-700 mb-2">Email</label>
+          <label class="block text-gray-400 mb-2">Email</label>
           <input
             v-model="email"
             type="email"
             required
-            class="w-full px-3 py-2 border border-gray-300 rounded"
+            class="w-full bg-gray-900 text-white px-3 py-2 border border-gray-700 rounded-xl placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500"
             placeholder="your@email.com"
           />
         </div>
@@ -31,13 +31,13 @@
         <button
           type="submit"
           :disabled="isLoading"
-          class="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600 disabled:bg-gray-400"
+          class="w-full bg-red-600 text-white py-3 rounded-xl hover:bg-red-500 disabled:bg-gray-700 transition"
         >
           {{ isLoading ? 'Sending...' : 'Send Reset Link' }}
         </button>
 
         <div class="mt-4 text-center">
-          <button @click="backToLogin" type="button" class="text-blue-500 hover:underline">
+          <button @click="backToLogin" type="button" class="text-red-500 hover:underline">
             Back to Login
           </button>
         </div>
@@ -46,34 +46,30 @@
       <!-- Login/Register Form -->
       <form v-else @submit.prevent="handleSubmit">
         <div class="mb-4">
-          <label class="block text-gray-700 mb-2">Email</label>
+          <label class="block text-gray-400 mb-2">Email</label>
           <input
             v-model="email"
             type="email"
             required
-            class="w-full px-3 py-2 border border-gray-300 rounded"
+            class="w-full bg-gray-900 text-white px-3 py-2 border border-gray-700 rounded-xl placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500"
             placeholder="your@email.com"
           />
         </div>
 
         <div class="mb-4">
-          <label class="block text-gray-700 mb-2">Password</label>
+          <label class="block text-gray-400 mb-2">Password</label>
           <input
             v-model="password"
             type="password"
             required
-            class="w-full px-3 py-2 border border-gray-300 rounded"
+            class="w-full bg-gray-900 text-white px-3 py-2 border border-gray-700 rounded-xl placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500"
             placeholder="••••••••"
           />
         </div>
 
         <!-- Forgot Password Link -->
         <div v-if="isLoginMode" class="mb-6 text-right">
-          <button
-            @click="showResetMode"
-            type="button"
-            class="text-sm text-blue-500 hover:underline"
-          >
+          <button @click="showResetMode" type="button" class="text-sm text-red-400 hover:underline">
             Forgot password?
           </button>
         </div>
@@ -81,7 +77,7 @@
         <button
           type="submit"
           :disabled="isLoading || isGoogleLoading"
-          class="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600 disabled:bg-gray-400"
+          class="w-full bg-red-600 text-white py-3 rounded-xl hover:bg-red-500 disabled:bg-gray-700 transition"
         >
           {{ isLoading ? 'Loading...' : isLoginMode ? 'Login' : 'Register' }}
         </button>
@@ -89,16 +85,16 @@
 
       <!-- Divider -->
       <div class="flex items-center my-6">
-        <div class="flex-1 border-t border-gray-300"></div>
-        <span class="px-4 text-gray-500 text-sm">OR</span>
-        <div class="flex-1 border-t border-gray-300"></div>
+        <div class="flex-1 border-t border-gray-700"></div>
+        <span class="px-4 text-gray-400 text-sm">OR</span>
+        <div class="flex-1 border-t border-gray-700"></div>
       </div>
 
       <!-- Google Sign-In -->
       <button
         @click="handleGoogleSignIn"
         :disabled="isLoading || isGoogleLoading"
-        class="w-full flex items-center justify-center gap-3 bg-white border border-gray-300 text-gray-700 py-2 rounded hover:bg-gray-50 disabled:bg-gray-100 disabled:cursor-not-allowed transition-colors"
+        class="w-full flex items-center justify-center gap-3 bg-white border border-gray-300 text-gray-700 py-3 rounded-xl hover:bg-gray-50 disabled:bg-gray-100 disabled:cursor-not-allowed transition-colors"
       >
         <svg v-if="!isGoogleLoading" class="w-5 h-5" viewBox="0 0 24 24">
           <path
@@ -127,7 +123,7 @@
 
       <!-- Toggle modes -->
       <div class="mt-4 text-center">
-        <button @click="toggleMode" class="text-blue-500 hover:underline">
+        <button @click="toggleMode" class="text-red-500 hover:underline">
           {{ isLoginMode ? 'Need an account? Register' : 'Already have an account? Login' }}
         </button>
       </div>

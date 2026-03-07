@@ -1,7 +1,11 @@
-# Movie Recommender System
+# Movie Recommender
 
-A machine learning-based application designed to provide personalized movie recommendations.
+Nuxt-based movie browsing app built on TMDB data and Supabase authentication.
 
-## Overview
+## Current State
 
-This project implements a recommendation engine that suggests movies to users based on their preferences and viewing history.
+- `frontend/` contains the Nuxt application, TMDB proxy, auth flows, and watched-history UI.
+- `docs/` contains the developer documentation site.
+- The previous in-house similarity model and recommendation endpoints have been removed.
+
+This repository is now a clean foundation for a future external-provider recommendation flow.

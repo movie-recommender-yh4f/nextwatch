@@ -4,10 +4,9 @@ export default defineNuxtConfig({
   devtools: { enabled: true },
   modules: ['@nuxtjs/tailwindcss', '@vueuse/nuxt'],
   runtimeConfig: {
-    adminToken: process.env.ADMIN_API_TOKEN,
-    tmdbApiKey: '',
+    tmdbApiKey: process.env.NUXT_TMDB_API_KEY ?? '',
     public: {
-      supabaseUrl: '',
+      supabaseUrl: process.env.NUXT_PUBLIC_SUPABASE_URL ?? '',
       supabaseKey: process.env.NUXT_PUBLIC_SUPABASE_ANON_KEY ?? '',
     },
   },

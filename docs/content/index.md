@@ -1,7 +1,7 @@
 ---
 seo:
   title: Movie Recommender - Developer Docs
-  description: Technical documentation for developers.
+  description: Technical documentation for the current Movie Recommender codebase.
 ---
 
 ::u-page-hero
@@ -9,7 +9,7 @@ seo:
 Movie Recommender
 
 #description
-Developer documentation for the Movie Recommender system.
+Developer documentation for the current Movie Recommender codebase.
 
 #links
   :::u-button
@@ -41,26 +41,26 @@ Documentation
 #features
   :::u-page-feature
   ---
-  icon: i-lucide-database
-  to: /model/data-processing
+  icon: i-lucide-rocket
+  to: /getting-started/installation
   ---
   #title
-  Model & Data
-  
+  Getting Started
+
   #description
-  Data processing and similarity calculations
+  Local setup, environment variables, and project orientation
   :::
 
   :::u-page-feature
   ---
-  icon: i-lucide-brain
-  to: /ai/algorithms
+  icon: i-lucide-server
+  to: /api/tmdb-proxy
   ---
   #title
-  AI & Algorithms
-  
+  Backend API
+
   #description
-  Recommendation algorithms and implementation
+  TMDB proxy behavior and current server responsibilities
   :::
 
   :::u-page-feature
@@ -70,8 +70,8 @@ Documentation
   ---
   #title
   Frontend
-  
+
   #description
-  Vue components, pages, and structure
+  Pages, components, composables, and application structure
   :::
 ::

@@ -1,8 +1,14 @@
 <template>
   <div class="relative w-full h-full flex flex-col items-center justify-center p-4">
-    <div v-if="!movies || currentIndex >= movies.length" class="text-center">
+    <div v-if="moviesError" class="text-center">
+      <h2 class="text-2xl font-bold mb-2">Unable to load movies</h2>
+      <p class="text-gray-400">{{ moviesError }}</p>
+      <button @click="reset" class="mt-4 text-red-500 hover:underline">Retry</button>
+    </div>
+
+    <div v-else-if="!movies || currentIndex >= movies.length" class="text-center">
       <h2 class="text-2xl font-bold mb-2">No more movies!</h2>
-      <p class="text-gray-400">Come back later for more recommendations.</p>
+      <p class="text-gray-400">Come back later for more titles.</p>
       <button @click="reset" class="mt-4 text-red-500 hover:underline">Refresh</button>
     </div>
 
@@ -71,8 +77,22 @@ import type { Movie, MoviePreview } from '~/composables/useMovies'
 const { getPopularMovies, getMovieDetails, markAsWatched } = useMovies()
 import { ref, computed } from 'vue'
 
-const { data: movies, refresh } = await useAsyncData<MoviePreview[]>('popular-movies', () =>
-  getPopularMovies()
+const moviesError = ref('')
+const { data: movies, refresh } = await useAsyncData<MoviePreview[]>(
+  'popular-movies',
+  async () => {
+    try {
+      moviesError.value = ''
+      return await getPopularMovies()
+    } catch (error) {
+      console.error('Failed to load home movies:', error)
+      moviesError.value = 'Unable to load movies right now. Check the TMDB API configuration.'
+      return []
+    }
+  },
+  {
+    default: () => [],
+  }
 )
 
 const selectedMovie = ref<Movie | null>(null)
@@ -117,7 +137,6 @@ const openDetails = async (movie: MoviePreview) => {
 }
 
 const reset = async () => {
-  //will change when recommendation model is added
   currentIndex.value = 0
   await refresh()
 }

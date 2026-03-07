@@ -8,46 +8,59 @@ import type {
 
 export const useMovies = () => {
   const IMAGE_BASE = 'https://image.tmdb.org/t/p/w500'
+  const tmdbErrorMessage = 'TMDB data is unavailable right now. Check NUXT_TMDB_API_KEY.'
 
   const getPopularMovies = async (): Promise<MoviePreview[]> => {
-    const [moviesData, genresData] = await Promise.all([
-      $fetch<TMDBPopularResponse>('/api/tmdb/movie/popular', { params: { page: 1 } }),
-      $fetch<TMDBGenreListResponse>('/api/tmdb/genre/movie/list'),
-    ])
+    try {
+      const [moviesData, genresData] = await Promise.all([
+        $fetch<TMDBPopularResponse>('/api/tmdb/movie/popular', { params: { page: 1 } }),
+        $fetch<TMDBGenreListResponse>('/api/tmdb/genre/movie/list'),
+      ])
 
-    const genreMap = new Map<number, string>(
-      genresData.genres.map((g: TMDBGenre) => [g.id, g.name])
-    )
+      const genreMap = new Map<number, string>(
+        genresData.genres.map((g: TMDBGenre) => [g.id, g.name])
+      )
 
-    return moviesData.results
-      .map((movie: TMDBMovie) => ({
-        id: movie.id,
-        title: movie.title,
-        poster: movie.poster_path ? `${IMAGE_BASE}${movie.poster_path}` : '',
-        rating: Math.round(movie.vote_average * 10) / 10,
-        year: parseInt(movie.release_date?.split('-')[0] || '0'),
-        genres: movie.genre_ids.map((id) => genreMap.get(id) || 'Unknown').slice(0, 3),
-        description: movie.overview,
-      }))
-      .slice(0, 20) // * limit to first 20 movies
+      return moviesData.results
+        .map((movie: TMDBMovie) => ({
+          id: movie.id,
+          title: movie.title,
+          poster: movie.poster_path ? `${IMAGE_BASE}${movie.poster_path}` : '',
+          rating: Math.round(movie.vote_average * 10) / 10,
+          year: parseInt(movie.release_date?.split('-')[0] || '0'),
+          genres: movie.genre_ids.map((id) => genreMap.get(id) || 'Unknown').slice(0, 3),
+          description: movie.overview,
+        }))
+        .slice(0, 20)
+    } catch (error) {
+      console.error('Failed to load popular movies:', error)
+      throw new Error(tmdbErrorMessage)
+    }
   }
 
   const getMovieDetails = async (movieId: number): Promise<Movie> => {
-    const data = await $fetch<TMDBMovieDetails>(`/api/tmdb/movie/${movieId}`, {
-      params: { append_to_response: 'credits' },
-    })
+    try {
+      const data = await $fetch<TMDBMovieDetails>(`/api/tmdb/movie/${movieId}`, {
+        params: { append_to_response: 'credits' },
+      })
 
-    return {
-      id: data.id,
-      imdb_id: data.imdb_id,
-      title: data.title,
-      poster: data.poster_path ? `${IMAGE_BASE}${data.poster_path}` : '',
-      rating: Math.round(data.vote_average * 10) / 10,
-      year: parseInt(data.release_date?.split('-')[0] || '0'),
-      duration: data.runtime ? `${Math.floor(data.runtime / 60)}h ${data.runtime % 60}m` : 'N/A',
-      genres: data.genres.map((g: TMDBGenre) => g.name),
-      actors: data.credits.cast.slice(0, 5).map((actor: { name: string }) => actor.name),
-      description: data.overview,
+      return {
+        id: data.id,
+        imdb_id: data.imdb_id,
+        title: data.title,
+        poster: data.poster_path ? `${IMAGE_BASE}${data.poster_path}` : '',
+        rating: Math.round(data.vote_average * 10) / 10,
+        year: parseInt(data.release_date?.split('-')[0] || '0'),
+        duration: data.runtime
+          ? `${Math.floor(data.runtime / 60)}h ${data.runtime % 60}m`
+          : 'N/A',
+        genres: data.genres.map((g: TMDBGenre) => g.name),
+        actors: data.credits.cast.slice(0, 5).map((actor: { name: string }) => actor.name),
+        description: data.overview,
+      }
+    } catch (error) {
+      console.error(`Failed to load movie details for ${movieId}:`, error)
+      throw new Error(tmdbErrorMessage)
     }
   }
 

@@ -101,17 +101,21 @@ export const useMovies = () => {
     }
   }
 
-  const markAsWatched = async (movie: Pick<MoviePreview, 'id' | 'title' | 'year'>) => {
-    if (!watchedMovies.value.includes(movie.id)) {
-      watchedMovies.value.push(movie.id)
-    }
-
+  const markAsWatched = async (
+    movie: Pick<MoviePreview, 'id' | 'title' | 'year'>
+  ): Promise<'ok' | 'unauthorized' | 'error'> => {
     try {
       const {
         data: { session },
       } = await supabase.auth.getSession()
 
-      if (!session?.access_token) return
+      if (!session?.access_token) {
+        return 'unauthorized'
+      }
+
+      if (!watchedMovies.value.includes(movie.id)) {
+        watchedMovies.value.push(movie.id)
+      }
 
       await $fetch('/api/watched', {
         method: 'POST',
@@ -128,7 +132,10 @@ export const useMovies = () => {
       })
     } catch (error) {
       console.error('Failed to mark movie as watched in Supabase:', error)
+      return 'error'
     }
+
+    return 'ok'
   }
 
   // just for development and testing purposes

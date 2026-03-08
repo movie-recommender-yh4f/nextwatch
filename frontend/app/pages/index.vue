@@ -118,7 +118,16 @@ const handleSwipe = async (direction: 'left' | 'right') => {
   if (!currentMovie) return
 
   if (direction === 'right') {
-    await markAsWatched({ id: currentMovie.id, title: currentMovie.title, year: currentMovie.year })
+    const markResult = await markAsWatched({
+      id: currentMovie.id,
+      title: currentMovie.title,
+      year: currentMovie.year,
+    })
+    if (markResult === 'unauthorized') {
+      await navigateTo('/login')
+      return
+    }
+    if (markResult !== 'ok') return
     // dodati animaciju? (trigger)
   } else {
     // preskakanje?

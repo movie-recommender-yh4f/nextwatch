@@ -10,6 +10,7 @@
     "postinstall": "nuxt prepare"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "@supabase/supabase-js": "^2.90.1",
     "@vueuse/core": "^14.1.0",
     "@vueuse/nuxt": "^14.1.0",

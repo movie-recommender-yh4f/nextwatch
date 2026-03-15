@@ -5,6 +5,7 @@ export default defineNuxtConfig({
   modules: ['@nuxtjs/tailwindcss', '@vueuse/nuxt'],
   runtimeConfig: {
     tmdbApiKey: process.env.NUXT_TMDB_API_KEY ?? '',
+    geminiApiKey: process.env.NUXT_GEMINI_API_KEY ?? '',
     public: {
       supabaseUrl: process.env.NUXT_PUBLIC_SUPABASE_URL ?? '',
       supabaseKey: process.env.NUXT_PUBLIC_SUPABASE_ANON_KEY ?? '',

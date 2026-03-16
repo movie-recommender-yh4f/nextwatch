@@ -2,7 +2,7 @@
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
-  modules: ['@nuxtjs/tailwindcss', '@vueuse/nuxt'],
+  modules: ['@nuxtjs/tailwindcss', '@vueuse/nuxt', '@nuxt/eslint'],
   runtimeConfig: {
     tmdbApiKey: process.env.NUXT_TMDB_API_KEY ?? '',
     geminiApiKey: process.env.NUXT_GEMINI_API_KEY ?? '',

@@ -78,7 +78,7 @@ export const useMovies = () => {
   const supabase = useSupabase()
 
   const loadPendingWatchedFromStorage = () => {
-    if (!process.client) return
+    if (!import.meta.client) return
 
     try {
       const raw = window.localStorage.getItem(pendingWatchedStorageKey)
@@ -103,7 +103,7 @@ export const useMovies = () => {
   }
 
   const persistPendingWatchedToStorage = () => {
-    if (!process.client) return
+    if (!import.meta.client) return
 
     try {
       if (pendingWatchedMovies.value.length === 0) {

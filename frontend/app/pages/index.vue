@@ -73,9 +73,9 @@
 </template>
 
 <script setup lang="ts">
+import { ref, computed } from 'vue'
 import type { Movie, MoviePreview } from '~/composables/useMovies'
 const { getPopularMovies, getMovieDetails, markAsWatched, queuePendingWatchedMovie } = useMovies()
-import { ref, computed } from 'vue'
 
 const moviesError = ref('')
 const { data: movies, refresh } = await useAsyncData<MoviePreview[]>(

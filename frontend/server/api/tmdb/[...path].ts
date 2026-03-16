@@ -1,6 +1,6 @@
 import { fetchTmdb } from '../../utils/tmdb'
 
-export default defineEventHandler(async (event): Promise<any> => {
+export default defineEventHandler(async (event) => {
   const query = getQuery(event)
   const path = event.context.params?.path as string | undefined
 

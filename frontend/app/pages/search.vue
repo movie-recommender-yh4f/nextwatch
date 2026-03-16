@@ -24,7 +24,13 @@
       </svg>
     </div>
 
-    <div class="grid grid-cols-2 gap-4">
+    <div v-if="loadError" class="rounded-xl bg-red-900/60 text-red-200 p-4 mb-6">
+      {{ loadError }}
+    </div>
+
+    <div v-else-if="isLoading" class="text-center text-gray-400 mt-20">Loading movies...</div>
+
+    <div v-else class="grid grid-cols-2 gap-4">
       <div
         v-for="movie in filteredMovies"
         :key="movie.id"
@@ -46,9 +52,22 @@ import type { MoviePreview } from '~/composables/useMovies'
 const { getPopularMovies } = useMovies()
 const query = ref('')
 const movies = ref<MoviePreview[]>([])
+const isLoading = ref(false)
+const loadError = ref('')
 
 onMounted(async () => {
-  movies.value = await getPopularMovies()
+  isLoading.value = true
+  loadError.value = ''
+
+  try {
+    movies.value = await getPopularMovies()
+  } catch (error) {
+    console.error('Failed to load search movies:', error)
+    loadError.value = 'Unable to load movies right now. Check the TMDB API configuration.'
+    movies.value = []
+  } finally {
+    isLoading.value = false
+  }
 })
 
 const filteredMovies = computed(() => {

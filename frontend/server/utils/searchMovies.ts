@@ -11,12 +11,18 @@ export async function searchMovies(query: string): Promise<MovieSearchResult[]> 
   const normalizedQuery = query.trim()
   if (normalizedQuery.length < MIN_QUERY_LENGTH) return []
 
-  const ftsQuery =
-    normalizedQuery
-      .trim()
-      .split(/\s+/)
-      .map((token) => `"${token.replace(/"/g, '""')}"`)
-      .join(' ') + '*'
+  const tokens = normalizedQuery
+    .split(/\s+/)
+    .map((token) => token.replace(/"/g, '""'))
+    .filter((token) => token.length > 0)
+
+  const ftsQuery = tokens
+    .map((token, index) => {
+      const needsQuotes = /[^\p{L}\p{N}_]/u.test(token)
+      const wildcardSuffix = index === tokens.length - 1 ? '*' : ''
+      return needsQuotes ? `"${token}"${wildcardSuffix}` : `${token}${wildcardSuffix}`
+    })
+    .join(' ')
 
   const db = useDb()
   const rows = await db.execute({

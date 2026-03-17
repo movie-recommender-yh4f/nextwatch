@@ -15,7 +15,6 @@ export interface TMDBMovie {
 
 export interface TMDBMovieDetails {
   id: number
-  imdb_id: string | null
   title: string
   poster_path: string | null
   backdrop_path: string | null
@@ -30,14 +29,22 @@ export interface TMDBMovieDetails {
       name: string
     }>
   }
-  adult: boolean
-  budget: number
-  revenue: number
+  videos: {
+    results: TMDBVideo[]
+  }
 }
 
 export interface TMDBGenre {
   id: number
   name: string
+}
+
+export interface TMDBVideo {
+  key: string
+  site: string
+  type: string
+  official: boolean
+  published_at: string
 }
 
 export interface TMDBPopularResponse {

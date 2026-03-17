@@ -60,7 +60,10 @@ CREATE TABLE IF NOT EXISTS movies_metadata (
     release_date  TEXT,
     runtime       INTEGER,
     vote_average  REAL,
-    json_data     TEXT,
+    vote_count    INTEGER,
+    genres        TEXT,
+    cast          TEXT,
+    trailer_key   TEXT,
     cached_at     INTEGER
 );
 
@@ -73,3 +76,6 @@ ON movies_index(popularity DESC);
 
 CREATE INDEX IF NOT EXISTS idx_metadata_cached
 ON movies_metadata(cached_at);
+
+CREATE INDEX IF NOT EXISTS idx_metadata_tmdb_cached
+ON movies_metadata(tmdb_id, cached_at);

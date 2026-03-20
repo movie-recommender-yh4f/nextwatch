@@ -17,7 +17,10 @@
         class="flex bg-gray-800 rounded-xl p-3 gap-3"
         @click="openDetails(movie.tmdbId)"
       >
-        <img :src="`${IMAGE_BASE}${movie.posterPath}`" class="w-20 h-28 object-cover rounded-lg flex-shrink-0" />
+        <img
+          :src="`${IMAGE_BASE}${movie.posterPath}`"
+          class="w-20 h-28 object-cover rounded-lg flex-shrink-0"
+        />
         <div class="flex flex-col justify-center">
           <h3 class="font-bold text-lg">{{ movie.title }}</h3>
           <p class="text-sm text-gray-400">{{ movie.year }}</p>
@@ -35,7 +38,7 @@
 </template>
 
 <script setup lang="ts">
-import type { Movie } from '~/composables/useMovies'
+import type { Movie } from '~/types/movie'
 
 const { IMAGE_BASE, watchedMovies, getMovieDetails } = useMovies()
 const selectedMovie = ref<Movie | null>(null)

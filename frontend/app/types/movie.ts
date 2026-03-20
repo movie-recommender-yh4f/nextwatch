@@ -57,3 +57,40 @@ export interface TMDBPopularResponse {
 export interface TMDBGenreListResponse {
   genres: TMDBGenre[]
 }
+
+export interface Movie {
+  id: number
+  title: string
+  poster: string
+  rating: number
+  year: number
+  duration: string
+  genres: string[]
+  actors: string[]
+  description: string
+  trailer: string | null
+}
+
+export interface MoviePreview {
+  id: number
+  title: string
+  poster: string
+  rating: number
+  year: number
+  genres: string[]
+  description: string
+}
+
+export interface WatchedMovie {
+  tmdbId: number
+  title: string
+  year: number
+  posterPath: string
+}
+
+export interface PendingWatchedMovie {
+  id: number
+  title: string
+  year: number
+  posterPath: string
+}

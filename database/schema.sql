@@ -60,7 +60,10 @@ CREATE TABLE IF NOT EXISTS movies_metadata (
     release_date  TEXT,
     runtime       INTEGER,
     vote_average  REAL,
-    json_data     TEXT,
+    vote_count    INTEGER,
+    genres        TEXT,
+    cast          TEXT,
+    trailer_key   TEXT,
     cached_at     INTEGER
 );
 
@@ -74,18 +77,5 @@ ON movies_index(popularity DESC);
 CREATE INDEX IF NOT EXISTS idx_metadata_cached
 ON movies_metadata(cached_at);
 
--- =====================================================
--- SCHEMA MIGRATIONS (for Turso/libSQL migration path)
--- =====================================================
-
-CREATE TABLE IF NOT EXISTS _schema_migrations (
-    id         INTEGER PRIMARY KEY,
-    version    TEXT NOT NULL UNIQUE,
-    applied_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
-INSERT OR IGNORE INTO _schema_migrations (id, version)
-VALUES (1, '001_movies_index_and_metadata');
-
-INSERT OR IGNORE INTO _schema_migrations (id, version)
-VALUES (2, '002_slim_movies_index');
+CREATE INDEX IF NOT EXISTS idx_metadata_tmdb_cached
+ON movies_metadata(tmdb_id, cached_at);

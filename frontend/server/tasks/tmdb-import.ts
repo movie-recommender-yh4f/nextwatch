@@ -27,7 +27,6 @@ function isTmdbExportRow(value: unknown): value is TmdbExportRow {
 }
 
 function buildExportUrl(): string {
-  // TMDB publishes the previous day's export — use yesterday to guarantee availability
   const date = new Date()
   date.setUTCDate(date.getUTCDate() - 1)
   const mm = String(date.getUTCMonth() + 1).padStart(2, '0')

@@ -1,6 +1,5 @@
 import type {
   TMDBMovie,
-  TMDBMovieDetails,
   TMDBPopularResponse,
   TMDBGenreListResponse,
   TMDBGenre,
@@ -51,22 +50,7 @@ export const useMovies = () => {
 
   const getMovieDetails = async (movieId: number): Promise<Movie> => {
     try {
-      const data = await $fetch<TMDBMovieDetails>(`/api/tmdb/movie/${movieId}`, {
-        params: { append_to_response: 'credits' },
-      })
-
-      return {
-        id: data.id,
-        imdb_id: data.imdb_id,
-        title: data.title,
-        poster: data.poster_path ? `${IMAGE_BASE}${data.poster_path}` : '',
-        rating: Math.round(data.vote_average * 10) / 10,
-        year: parseInt(data.release_date?.split('-')[0] || '0'),
-        duration: data.runtime ? `${Math.floor(data.runtime / 60)}h ${data.runtime % 60}m` : 'N/A',
-        genres: data.genres.map((g: TMDBGenre) => g.name),
-        actors: data.credits.cast.slice(0, 5).map((actor: { name: string }) => actor.name),
-        description: data.overview,
-      }
+      return await $fetch<Movie>(`/api/movies/${movieId}`)
     } catch (error) {
       console.error(`Failed to load movie details for ${movieId}:`, error)
       throw new Error(tmdbErrorMessage)
@@ -295,6 +279,7 @@ export const useMovies = () => {
       actors: ['Leonardo DiCaprio', 'Joseph Gordon-Levitt'],
       description:
         'A thief who steals corporate secrets through the use of dream-sharing technology is given the inverse task of planting an idea into the mind of a C.E.O.',
+      trailer: null,
     },
     {
       id: 2,
@@ -307,6 +292,7 @@ export const useMovies = () => {
       actors: ['Christian Bale', 'Heath Ledger'],
       description:
         'When the menace known as the Joker wreaks havoc and chaos on the people of Gotham, Batman must accept one of the greatest psychological and physical tests of his ability to fight injustice.',
+      trailer: null,
     },
     {
       id: 3,
@@ -319,6 +305,7 @@ export const useMovies = () => {
       actors: ['Matthew McConaughey', 'Anne Hathaway'],
       description:
         "A team of explorers travel through a wormhole in space in an attempt to ensure humanity's survival.",
+      trailer: null,
     },
   ])
 
@@ -338,7 +325,6 @@ export const useMovies = () => {
 
 export interface Movie {
   id: number
-  imdb_id?: string | null
   title: string
   poster: string
   rating: number
@@ -347,6 +333,7 @@ export interface Movie {
   genres: string[]
   actors: string[]
   description: string
+  trailer: string | null
 }
 
 export interface MoviePreview {

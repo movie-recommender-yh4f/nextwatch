@@ -4,6 +4,11 @@ import type { User, AuthError, Session } from '@supabase/supabase-js'
 const user = ref<User | null>(null)
 const session = ref<Session | null>(null)
 const loading = ref(true)
+const AUTH_SYNC_DEFER_MS = 0
+
+let hasInitializedAuth = false
+let authStateSubscription: { unsubscribe: () => void } | null = null
+let pendingAuthSyncTimeout: ReturnType<typeof setTimeout> | null = null
 
 export const useAuth = () => {
   const supabase = useSupabase()
@@ -12,6 +17,17 @@ export const useAuth = () => {
 
   const isAuthenticated = computed(() => !!user.value)
   const userEmail = computed(() => user.value?.email || '')
+
+  const scheduleWatchedStateSyncAfterAuth = (accessToken?: string) => {
+    if (pendingAuthSyncTimeout) {
+      clearTimeout(pendingAuthSyncTimeout)
+    }
+
+    pendingAuthSyncTimeout = setTimeout(() => {
+      pendingAuthSyncTimeout = null
+      void syncWatchedStateAfterAuth(accessToken)
+    }, AUTH_SYNC_DEFER_MS)
+  }
 
   const syncWatchedStateAfterAuth = async (accessToken?: string) => {
     if (!accessToken) {
@@ -112,6 +128,11 @@ export const useAuth = () => {
 
   //Login user again if there's an active session
   const initialize = async () => {
+    if (hasInitializedAuth) {
+      loading.value = false
+      return
+    }
+
     try {
       loading.value = true
       const {
@@ -122,14 +143,19 @@ export const useAuth = () => {
       user.value = currentSession?.user || null
       await syncWatchedStateAfterAuth(currentSession?.access_token)
 
-      supabase.auth.onAuthStateChange(async (_event, newSession) => {
-        session.value = newSession
-        user.value = newSession?.user || null
-        await syncWatchedStateAfterAuth(newSession?.access_token)
-      })
+      if (!authStateSubscription) {
+        const { data } = supabase.auth.onAuthStateChange((_event, newSession) => {
+          session.value = newSession
+          user.value = newSession?.user || null
+          scheduleWatchedStateSyncAfterAuth(newSession?.access_token)
+        })
 
-      console.log('Auth initialized. Current user:', user.value)
+        authStateSubscription = data.subscription
+      }
+
+      hasInitializedAuth = true
     } catch (error) {
+      hasInitializedAuth = false
       console.error('Error initializing auth:', error)
     } finally {
       loading.value = false

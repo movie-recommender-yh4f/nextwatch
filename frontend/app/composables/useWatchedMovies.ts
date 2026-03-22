@@ -29,8 +29,7 @@ export const useWatchedMovies = () => {
             typeof movie?.posterPath === 'string'
         )
       }
-    } catch (error) {
-      console.error('Failed to read pending watched movies from storage:', error)
+    } catch {
       pendingWatchedMovies.value = []
     }
   }
@@ -48,8 +47,8 @@ export const useWatchedMovies = () => {
         PENDING_WATCHED_STORAGE_KEY,
         JSON.stringify(pendingWatchedMovies.value)
       )
-    } catch (error) {
-      console.error('Failed to persist pending watched movies to storage:', error)
+    } catch {
+      // localStorage may be unavailable (e.g. private browsing)
     }
   }
 
@@ -79,8 +78,8 @@ export const useWatchedMovies = () => {
       }
 
       watchedMovies.value = Array.isArray(data?.movies) ? (data.movies as WatchedMovie[]) : []
-    } catch (error) {
-      console.error('Failed to load watched movies from Supabase:', error)
+    } catch {
+      // Sync failed — keep existing local state
     }
   }
 
@@ -108,24 +107,20 @@ export const useWatchedMovies = () => {
         })
       }
 
-      void (async () => {
-        try {
-          await supabase.from('watched_movies').upsert(
-            {
-              user_id: session.user.id,
-              movies: watchedMovies.value,
-              updated_at: new Date().toISOString(),
-            },
-            { onConflict: 'user_id' }
-          )
-          console.log(`Marked movie ${movie.id} as watched for user ${session.user.id}`)
-        } catch (error) {
-          console.error('Failed to save watched movies to Supabase:', error)
-          watchedMovies.value = originalList
-        }
-      })()
-    } catch (error) {
-      console.error('Failed to mark movie as watched:', error)
+      const { error: upsertError } = await supabase.from('watched_movies').upsert(
+        {
+          user_id: session.user.id,
+          movies: watchedMovies.value,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'user_id' }
+      )
+
+      if (upsertError) {
+        watchedMovies.value = originalList
+        return 'error'
+      }
+    } catch {
       return 'error'
     }
 
@@ -145,25 +140,20 @@ export const useWatchedMovies = () => {
       const originalList = [...watchedMovies.value]
       watchedMovies.value = watchedMovies.value.filter((movie) => movie.tmdbId !== tmdbId)
 
-      void (async () => {
-        try {
-          await supabase.from('watched_movies').upsert(
-            {
-              user_id: session.user.id,
-              movies: watchedMovies.value,
-              updated_at: new Date().toISOString(),
-            },
-            { onConflict: 'user_id' }
-          )
+      const { error: upsertError } = await supabase.from('watched_movies').upsert(
+        {
+          user_id: session.user.id,
+          movies: watchedMovies.value,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'user_id' }
+      )
 
-          console.log(`Unmarked movie ${tmdbId} as watched for user ${session.user.id}`)
-        } catch (error) {
-          console.error('Failed to save watched movies to Supabase:', error)
-          watchedMovies.value = originalList
-        }
-      })()
-    } catch (error) {
-      console.error('Failed to unmark movie as watched:', error)
+      if (upsertError) {
+        watchedMovies.value = originalList
+        return 'error'
+      }
+    } catch {
       return 'error'
     }
 
@@ -228,20 +218,16 @@ export const useWatchedMovies = () => {
             })
           }
 
-          void (async () => {
-            try {
-              await supabase.from('watched_movies').upsert(
-                {
-                  user_id: session.user.id,
-                  movies: watchedMovies.value,
-                  updated_at: new Date().toISOString(),
-                },
-                { onConflict: 'user_id' }
-              )
-            } catch (error) {
-              console.error(`Failed to save pending movie ${movie.id}:`, error)
-            }
-          })()
+          const { error: upsertError } = await supabase.from('watched_movies').upsert(
+            {
+              user_id: session.user.id,
+              movies: watchedMovies.value,
+              updated_at: new Date().toISOString(),
+            },
+            { onConflict: 'user_id' }
+          )
+
+          if (upsertError) continue
 
           pendingWatchedMovies.value = pendingWatchedMovies.value.filter(
             (pendingMovie) => pendingMovie.id !== movie.id
@@ -249,14 +235,13 @@ export const useWatchedMovies = () => {
 
           persistPendingWatchedToStorage()
           processedCount++
-        } catch (error) {
-          console.error(`Failed to process pending movie ${movie.id}:`, error)
+        } catch {
+          // Skip failed movies — they remain in pending queue for next attempt
         }
       }
 
       return processedCount
-    } catch (error) {
-      console.error('Failed to process pending watched movies:', error)
+    } catch {
       return 0
     }
   }

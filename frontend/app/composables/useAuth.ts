@@ -7,7 +7,8 @@ const loading = ref(true)
 
 export const useAuth = () => {
   const supabase = useSupabase()
-  const { syncWatchedMoviesFromSupabase, processPendingWatchedMovies, clearWatchedMovies } = useMovies()
+  const { syncWatchedMoviesFromSupabase, processPendingWatchedMovies, clearWatchedMovies } =
+    useMovies()
 
   const isAuthenticated = computed(() => !!user.value)
   const userEmail = computed(() => user.value?.email || '')
@@ -18,9 +19,9 @@ export const useAuth = () => {
       return
     }
 
-    await syncWatchedMoviesFromSupabase(accessToken)
-    await processPendingWatchedMovies(accessToken)
-    await syncWatchedMoviesFromSupabase(accessToken)
+    await syncWatchedMoviesFromSupabase()
+    await processPendingWatchedMovies()
+    await syncWatchedMoviesFromSupabase()
   }
 
   const login = async (email: string, password: string) => {
@@ -126,6 +127,8 @@ export const useAuth = () => {
         user.value = newSession?.user || null
         await syncWatchedStateAfterAuth(newSession?.access_token)
       })
+
+      console.log('Auth initialized. Current user:', user.value)
     } catch (error) {
       console.error('Error initializing auth:', error)
     } finally {
@@ -164,4 +167,3 @@ export const useAuth = () => {
     updatePassword,
   }
 }
-

@@ -1,10 +1,11 @@
+import type { H3Event } from 'h3'
 import { createRateLimiter } from './ratelimit'
 
 const TMDB_API_URL = 'https://api.themoviedb.org/3'
 
 type TmdbQuery = Record<string, string | string[] | number | undefined>
 
-export async function fetchTmdb(path: string, query: TmdbQuery = {}): Promise<unknown> {
+export async function fetchTmdb(event: H3Event, path: string, query: TmdbQuery = {}): Promise<unknown> {
   const config = useRuntimeConfig()
   const apiKey = config.tmdbApiKey || process.env.NUXT_TMDB_API_KEY || ''
 
@@ -15,8 +16,15 @@ export async function fetchTmdb(path: string, query: TmdbQuery = {}): Promise<un
     })
   }
 
-  const limiter = createRateLimiter().tmdbLimiter
-  const { success } = await limiter.limit('tmdb:global')
+  const ip = getRequestIP(event, { xForwardedFor: true }) ?? 'anonymous'
+  const { tmdbLimiter } = createRateLimiter()
+  const { success, limit, remaining, reset } = await tmdbLimiter.limit(ip)
+
+  setResponseHeaders(event, {
+    'X-RateLimit-Limit': String(limit),
+    'X-RateLimit-Remaining': String(remaining),
+    'X-RateLimit-Reset': String(reset),
+  })
 
   if (!success) {
     throw createError({

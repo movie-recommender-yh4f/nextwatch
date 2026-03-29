@@ -3,7 +3,6 @@ import { fetchTmdb } from '../../utils/tmdb'
 export default defineEventHandler(async (event) => {
   const query = getQuery(event)
   const path = event.context.params?.path as string | undefined
-  const apiKey = config.tmdbApiKey || process.env.NUXT_TMDB_API_KEY || ''
 
   if (!path) {
     throw createError({
@@ -12,5 +11,9 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  return fetchTmdb(path, query)
+  const tmdbQuery = Object.fromEntries(
+    Object.entries(query).filter(([, v]) => v !== null),
+  ) as Record<string, string | string[] | number>
+
+  return fetchTmdb(event, path, tmdbQuery)
 })

@@ -74,11 +74,7 @@ function getSearchCandidates(recommendation: Recommendation): string[] {
   return [...new Set(candidates)]
 }
 
-function pickBestMatchId(
-  recommendation: Recommendation,
-  results: MovieSearchResult[],
-  searchCandidates: string[]
-): number | null {
+function pickBestMatchId(results: MovieSearchResult[], searchCandidates: string[]): number | null {
   if (results.length === 0) return null
 
   const normalizedCandidates = new Set(searchCandidates.map(normalizeTitle))
@@ -120,7 +116,9 @@ export function buildUserMessage(movies: Array<{ title: string; year: number }>)
   return `I have watched the following movies:\n${list}\n\nRecommend 10 movies I would enjoy.`
 }
 
-export async function appendTmdbIds(recommendations: Recommendation[]): Promise<RecommendationWithId[]> {
+export async function appendTmdbIds(
+  recommendations: Recommendation[]
+): Promise<RecommendationWithId[]> {
   const enriched: RecommendationWithId[] = []
 
   for (const recommendation of recommendations.slice(0, MAX_RECOMMENDATIONS)) {
@@ -131,7 +129,7 @@ export async function appendTmdbIds(recommendations: Recommendation[]): Promise<
 
       for (const candidate of searchCandidates) {
         const results = await searchMovies(candidate)
-        const tmdbId = pickBestMatchId(recommendation, results, searchCandidates)
+        const tmdbId = pickBestMatchId(results, searchCandidates)
 
         if (tmdbId !== null) {
           enriched.push({ ...recommendation, tmdbId })
@@ -152,7 +150,6 @@ export async function appendTmdbIds(recommendations: Recommendation[]): Promise<
       enriched.push({ ...recommendation, tmdbId: null })
     }
 
-    // Yield to event loop between queries so other requests aren't starved
     await new Promise<void>((resolve) => setTimeout(resolve, 0))
   }
 

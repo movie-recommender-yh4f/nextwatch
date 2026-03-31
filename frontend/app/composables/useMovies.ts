@@ -12,6 +12,7 @@ interface PendingWatchedMovie {
 
 export const useMovies = () => {
   const { IMAGE_BASE, getPopularMovies, getMovieDetails } = useMovieDetails()
+
   const {
     watchedMovies,
     pendingWatchedMovies,
@@ -22,10 +23,21 @@ export const useMovies = () => {
     clearWatchedMovies,
   } = useWatchedMovies()
 
+  const {
+    toWatchMovies,
+    pendingToWatchMovies,
+    markAsToWatch,
+    queuePendingToWatchMovie,
+    processPendingToWatchMovies,
+    syncToWatchMoviesFromSupabase,
+    clearToWatchMovies,
+  } = useToWatchMovies()
+
   return {
     IMAGE_BASE,
     getPopularMovies,
     getMovieDetails,
+
     watchedMovies,
     pendingWatchedMovies,
     markAsWatched,
@@ -33,5 +45,14 @@ export const useMovies = () => {
     processPendingWatchedMovies,
     syncWatchedMoviesFromSupabase,
     clearWatchedMovies,
+
+    // To Watch
+    toWatchMovies,
+    pendingToWatchMovies,
+    markAsToWatch,
+    queuePendingToWatchMovie,
+    processPendingToWatchMovies,
+    syncToWatchMoviesFromSupabase,
+    clearToWatchMovies,
   }
 }

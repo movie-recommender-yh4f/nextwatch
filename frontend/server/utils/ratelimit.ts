@@ -15,7 +15,7 @@ export function createRateLimiter() {
     analytics: true,
   })
 
-  const recommednationLimiter = new Ratelimit({
+  const modelLimiter = new Ratelimit({
     redis,
     limiter: Ratelimit.slidingWindow(20, '1 d'),
     analytics: true,
@@ -23,6 +23,6 @@ export function createRateLimiter() {
 
   return {
     tmdbLimiter,
-    recommednationLimiter,
+    recommednationLimiter: modelLimiter,
   }
 }

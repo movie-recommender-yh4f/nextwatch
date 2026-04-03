@@ -11,7 +11,7 @@ export async function fetchTmdb(
   query: TmdbQuery = {}
 ): Promise<unknown> {
   const config = useRuntimeConfig()
-  const apiKey = config.tmdbApiKey || process.env.NUXT_TMDB_API_KEY || ''
+  const apiKey = config.tmdbApiKey || process.env.NUXT_TMDB_API_KEY
 
   if (!apiKey) {
     throw createError({
@@ -41,11 +41,13 @@ export async function fetchTmdb(
     return await $fetch(path, {
       baseURL: TMDB_API_URL,
       params: {
-        api_key: apiKey,
         language: 'en-US',
         ...query,
       },
-      headers: { Accept: 'application/json' },
+      headers: {
+        Accept: 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+      },
     })
   } catch (error: unknown) {
     const fetchError = error as {

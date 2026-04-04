@@ -52,17 +52,17 @@ export const useAuth = () => {
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
-        options: username ? { data: { username } } : undefined,
+        options: username ? { data: { full_name: username } } : undefined,
       })
 
       if (error) throw error
 
-      if (data.user) {
+      if (data.session) {
         user.value = data.user
         session.value = data.session
       }
 
-      await syncWatchedStateAfterAuth(data.session?.access_token)
+      await syncWatchedStateAfterAuth(data.session?.access_token ?? undefined)
 
       return { user: data.user }
     } catch (error) {

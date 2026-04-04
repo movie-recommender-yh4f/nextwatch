@@ -21,7 +21,7 @@
       </div>
     </div>
 
-    <LoginPromptModal :is-open="showLoginModal" @close="showLoginModal = false" />
+    <LoginPromptModal :is-open="showLoginModal" @close="handleModalClose" />
   </div>
 </template>
 
@@ -29,12 +29,13 @@
 import { ref, computed, onMounted } from 'vue'
 
 const { getPopularMovies } = useMovieDetails()
-const { markAsWatched, queuePendingWatchedMovie } = useWatchedMovies()
+const { markAsWatched, queuePendingWatchedMovie, removePendingWatchedMovie } = useWatchedMovies()
 const { isAuthenticated } = useAuth()
 
 const movies = ref([])
 const pending = ref(true)
 const showLoginModal = ref(false)
+const pendingModalMovieId = ref(null)
 
 const currentMovie = computed(() => movies.value[0] || null)
 
@@ -81,7 +82,16 @@ const handleLike = async () => {
     }
   } else {
     queuePendingWatchedMovie(movieToSave)
+    pendingModalMovieId.value = movieToSave.id
     showLoginModal.value = true
   }
+}
+
+const handleModalClose = () => {
+  showLoginModal.value = false
+  if (!isAuthenticated.value && pendingModalMovieId.value !== null) {
+    removePendingWatchedMovie(pendingModalMovieId.value)
+  }
+  pendingModalMovieId.value = null
 }
 </script>

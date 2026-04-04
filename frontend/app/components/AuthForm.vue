@@ -9,7 +9,12 @@
           <span v-else-if="authView === 'register'">Create Account</span>
           <span v-else>Reset Password</span>
         </h2>
-        <p class="text-gray-500 dark:text-gray-400 text-sm">Find your next favorite movie</p>
+        <p v-if="authView === 'login'" class="text-gray-500 dark:text-gray-400 text-sm">
+          Log in to access your movie recommendations
+        </p>
+        <p v-if="authView === 'register'" class="text-gray-500 dark:text-gray-400 text-sm">
+          Find your next favorite movie
+        </p>
       </div>
 
       <AlertMessage type="error" :message="errorMessage" />
@@ -184,7 +189,7 @@ const submitAuth = async () => {
       }
       const { error } = await signup(email.value, password.value, username.value.trim())
       if (error) throw error
-      successMessage.value = 'Registration successful! You can now log in.'
+      successMessage.value = 'Registration successful! Please verify your email before logging in.'
       setTimeout(() => switchView('login'), 2000)
     } else if (authView.value === 'forgot') {
       const { error } = await resetPassword(email.value)

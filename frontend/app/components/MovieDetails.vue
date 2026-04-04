@@ -12,7 +12,12 @@
         class="absolute top-3 right-3 text-gray-700 dark:text-white bg-white/50 dark:bg-black/50 hover:bg-white/80 dark:hover:bg-black/80 rounded-full p-2 z-10 transition-colors"
       >
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M6 18L18 6M6 6l12 12"
+          ></path>
         </svg>
       </button>
 
@@ -57,7 +62,11 @@
         </div>
 
         <div v-if="movie.actors?.length" class="mb-4">
-          <h3 class="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Cast</h3>
+          <h3
+            class="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1"
+          >
+            Cast
+          </h3>
           <p class="text-gray-600 dark:text-gray-300 text-sm">{{ movie.actors.join(', ') }}</p>
         </div>
 
@@ -69,8 +78,18 @@
             disabled
             class="w-full py-3 bg-gray-100 dark:bg-gray-700 text-gray-400 rounded-xl text-sm font-bold flex justify-center items-center gap-2 cursor-not-allowed"
           >
-            <svg class="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            <svg
+              class="w-5 h-5 text-green-500"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M5 13l4 4L19 7"
+              />
             </svg>
             Already Watched
           </button>
@@ -80,7 +99,12 @@
             class="w-full py-3 bg-rose-500 hover:bg-rose-600 text-white rounded-xl text-sm font-bold flex justify-center items-center gap-2 transition-colors"
           >
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M12 4v16m8-8H4"
+              />
             </svg>
             Add to Watched
           </button>
@@ -93,6 +117,14 @@
 <script setup lang="ts">
 import { computed, ref, watch, onBeforeUnmount, nextTick } from 'vue'
 import type { Movie } from '~/types/movie'
+import {
+  YOUTUBE_API_SCRIPT_ID,
+  YOUTUBE_API_URL,
+  YOUTUBE_PLAYER_ERROR_EMBEDDING,
+  YOUTUBE_PLAYER_ERROR_RESTRICTED,
+} from '~/constants'
+
+import type { YouTubePlayerInstance, YouTubeWindow } from '~/types/youtube'
 
 const props = defineProps<{
   isOpen: boolean
@@ -104,7 +136,7 @@ const props = defineProps<{
 defineEmits(['close', 'add'])
 
 const trailerFailed = ref(false)
-let player: any = null
+let player: YouTubePlayerInstance | null = null
 const playerId = `yt-player-${Math.random().toString(36).slice(2, 9)}`
 
 const trailerVideoId = computed(() => {
@@ -116,18 +148,27 @@ const trailerVideoId = computed(() => {
 
 function loadYouTubeAPI(): Promise<void> {
   return new Promise((resolve) => {
-    if ((window as any).YT?.Player) {
+    if (typeof window === 'undefined' || typeof document === 'undefined') {
       resolve()
       return
     }
-    if (!document.getElementById('yt-iframe-api')) {
+
+    const youtubeWindow = window as YouTubeWindow
+
+    if (youtubeWindow.YT?.Player) {
+      resolve()
+      return
+    }
+
+    if (!document.getElementById(YOUTUBE_API_SCRIPT_ID)) {
       const tag = document.createElement('script')
-      tag.id = 'yt-iframe-api'
-      tag.src = 'https://www.youtube.com/iframe_api'
+      tag.id = YOUTUBE_API_SCRIPT_ID
+      tag.src = YOUTUBE_API_URL
       document.head.appendChild(tag)
     }
-    const existing = (window as any).onYouTubeIframeAPIReady
-    ;(window as any).onYouTubeIframeAPIReady = () => {
+
+    const existing = youtubeWindow.onYouTubeIframeAPIReady
+    youtubeWindow.onYouTubeIframeAPIReady = () => {
       existing?.()
       resolve()
     }
@@ -135,10 +176,17 @@ function loadYouTubeAPI(): Promise<void> {
 }
 
 function destroyPlayer() {
-  if (player) {
-    try { player.destroy() } catch {}
-    player = null
+  if (!player) {
+    return
   }
+
+  try {
+    player.destroy()
+  } catch {
+    // Ignore player teardown errors.
+  }
+
+  player = null
 }
 
 async function createPlayer(videoId: string) {
@@ -146,18 +194,28 @@ async function createPlayer(videoId: string) {
   await loadYouTubeAPI()
   await nextTick()
 
+  if (typeof document === 'undefined' || typeof window === 'undefined') {
+    return
+  }
+
   const container = document.getElementById(playerId)
   if (!container) return
 
-  player = new (window as any).YT.Player(playerId, {
+  const youtubeWindow = window as YouTubeWindow
+  const Player = youtubeWindow.YT?.Player
+  if (!Player) return
+
+  player = new Player(playerId, {
     videoId,
     width: '100%',
     height: '100%',
     playerVars: { autoplay: 0, modestbranding: 1, rel: 0 },
     events: {
-      onError: (event: any) => {
-        // 101 and 150 = video not allowed to be embedded / age-restricted
-        if ([101, 150].includes(event.data)) {
+      onError: (event) => {
+        if (
+          event.data === YOUTUBE_PLAYER_ERROR_EMBEDDING ||
+          event.data === YOUTUBE_PLAYER_ERROR_RESTRICTED
+        ) {
           trailerFailed.value = true
           destroyPlayer()
         }
@@ -166,24 +224,33 @@ async function createPlayer(videoId: string) {
   })
 }
 
-watch(() => props.movie, async (movie) => {
-  trailerFailed.value = false
-  destroyPlayer()
-
-  if (!movie) return
-
-  const videoId = trailerVideoId.value
-  if (!videoId) return
-
-  await nextTick()
-  createPlayer(videoId)
-}, { immediate: true })
-
-watch(() => props.isOpen, (open) => {
-  if (!open) {
+// Sync the embedded player with the selected movie while the modal is open.
+watch(
+  () => props.movie,
+  async (movie) => {
+    trailerFailed.value = false
     destroyPlayer()
+
+    if (!movie) return
+
+    const videoId = trailerVideoId.value
+    if (!videoId) return
+
+    await nextTick()
+    createPlayer(videoId)
+  },
+  { immediate: true }
+)
+
+// Destroy the player when the modal closes to avoid leaking iframe state.
+watch(
+  () => props.isOpen,
+  (open) => {
+    if (!open) {
+      destroyPlayer()
+    }
   }
-})
+)
 
 onBeforeUnmount(() => {
   destroyPlayer()

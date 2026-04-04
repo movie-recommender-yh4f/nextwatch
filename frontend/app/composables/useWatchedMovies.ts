@@ -186,6 +186,11 @@ export const useWatchedMovies = () => {
     persistPendingWatchedToStorage()
   }
 
+  const removePendingWatchedMovie = (movieId: number) => {
+    pendingWatchedMovies.value = pendingWatchedMovies.value.filter((m) => m.id !== movieId)
+    persistPendingWatchedToStorage()
+  }
+
   const processPendingWatchedMovies = async (accessToken?: string): Promise<number> => {
     if (pendingWatchedMovies.value.length === 0) {
       loadPendingWatchedFromStorage()
@@ -272,6 +277,7 @@ export const useWatchedMovies = () => {
     markAsWatched,
     removeFromWatched,
     queuePendingWatchedMovie,
+    removePendingWatchedMovie,
     processPendingWatchedMovies,
     syncWatchedMoviesFromSupabase,
     clearWatchedMovies,

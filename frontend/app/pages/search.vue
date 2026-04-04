@@ -87,7 +87,7 @@
 import { ref } from 'vue'
 
 const { user } = useAuth()
-const { queuePendingWatchedMovie, watchedMovies } = useWatchedMovies()
+const { markAsWatched, queuePendingWatchedMovie, watchedMovies } = useWatchedMovies()
 
 const searchQuery = ref('')
 const searchResults = ref([])
@@ -129,7 +129,7 @@ const isAlreadyWatched = (tmdbId) => {
   return watchedMovies.value.some((movie) => movie.tmdbId === tmdbId || movie.id === tmdbId)
 }
 
-const addToWatched = (movie) => {
+const addToWatched = async (movie) => {
   if (!user.value) {
     alert('You must be logged in to add a movie to your list!')
     return
@@ -141,6 +141,9 @@ const addToWatched = (movie) => {
     poster: posterUrl(movie.poster_path),
   }
 
-  queuePendingWatchedMovie(movieToSave)
+  const status = await markAsWatched(movieToSave)
+  if (status === 'unauthorized' || status === 'error') {
+    queuePendingWatchedMovie(movieToSave)
+  }
 }
 </script>

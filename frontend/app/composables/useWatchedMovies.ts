@@ -98,18 +98,18 @@ export const useWatchedMovies = () => {
         return 'unauthorized'
       }
 
-      const posterPath = posterPath(movie.poster)
+      const path = posterPath(movie.poster)
 
       if (!watchedMovies.value.some((s) => s.tmdbId === movie.id)) {
         watchedMovies.value.push({
           tmdbId: movie.id,
           title: movie.title,
           year: movie.year,
-          posterPath,
+          posterPath: path,
         })
       }
 
-      $fetch('/api/watched', {
+      await $fetch('/api/watched', {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${session.access_token}`,
@@ -119,7 +119,7 @@ export const useWatchedMovies = () => {
             tmdbId: movie.id,
             title: movie.title,
             year: movie.year,
-            posterPath,
+            posterPath: path,
           },
         },
       })
@@ -214,7 +214,7 @@ export const useWatchedMovies = () => {
         }
 
         try {
-          $fetch('/api/watched', {
+          await $fetch('/api/watched', {
             method: 'POST',
             headers: {
               Authorization: `Bearer ${token}`,

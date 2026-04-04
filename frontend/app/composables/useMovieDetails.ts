@@ -6,8 +6,7 @@ import type {
   TMDBGenreListResponse,
   TMDBGenre,
 } from '~/types/movie'
-
-const IMAGE_BASE = 'https://image.tmdb.org/t/p/w500'
+import { IMAGE_BASE } from '~/constants'
 const TMDB_ERROR_MESSAGE = 'TMDB data is unavailable right now. Check NUXT_TMDB_API_KEY.'
 
 export const useMovieDetails = () => {

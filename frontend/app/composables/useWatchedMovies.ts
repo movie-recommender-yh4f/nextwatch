@@ -3,7 +3,6 @@ import type { WatchedMovie, PendingWatchedMovie, MoviePreview } from '~/types/mo
 const PENDING_WATCHED_STORAGE_KEY = 'movie-recommender-pending-watched'
 
 export const useWatchedMovies = () => {
-  const { IMAGE_BASE } = useMovieDetails()
   const supabase = useSupabase()
 
   const watchedMovies = useState<WatchedMovie[]>('watched', () => [])
@@ -99,7 +98,7 @@ export const useWatchedMovies = () => {
         return 'unauthorized'
       }
 
-      const posterPath = movie.poster.slice(IMAGE_BASE.length)
+      const posterPath = posterPath(movie.poster)
 
       if (!watchedMovies.value.some((s) => s.tmdbId === movie.id)) {
         watchedMovies.value.push({
@@ -143,7 +142,7 @@ export const useWatchedMovies = () => {
       id: movie.id,
       title: movie.title,
       year: movie.year,
-      posterPath: movie.poster.slice(IMAGE_BASE.length),
+      posterPath: posterPath(movie.poster),
     })
 
     persistPendingWatchedToStorage()

@@ -37,7 +37,6 @@ interface MovieResponse {
 const CACHE_TTL_MONTHS = 3
 const CACHE_TTL_SECONDS = CACHE_TTL_MONTHS * 30 * 24 * 60 * 60
 const YOUTUBE_BASE = 'https://www.youtube.com/watch?v='
-const IMAGE_BASE = 'https://image.tmdb.org/t/p/w500'
 
 export default defineEventHandler(async (event): Promise<MovieResponse> => {
   const id = parseInt(getRouterParam(event, 'id') ?? '', 10)

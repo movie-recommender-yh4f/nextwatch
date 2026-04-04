@@ -9,14 +9,6 @@
       class="absolute inset-0 w-full h-full object-cover"
     />
 
-    <div class="absolute inset-x-0 top-0 flex gap-1 p-2 z-10">
-      <div class="h-1 flex-1 bg-white/50 rounded-full overflow-hidden">
-        <div class="h-full w-1/3 bg-white rounded-full"></div>
-      </div>
-      <div class="h-1 flex-1 bg-white/50 rounded-full overflow-hidden"></div>
-      <div class="h-1 flex-1 bg-white/50 rounded-full overflow-hidden"></div>
-    </div>
-
     <div
       class="absolute inset-x-0 bottom-0 h-[60%] bg-gradient-to-t from-black/95 via-black/60 to-transparent pointer-events-none z-0"
     ></div>
@@ -37,7 +29,7 @@
           </svg>
           <span>{{ movie.genre }}</span>
         </div>
-        <div class="flex items-center gap-2 mt-1 text-sm opacity-90 drop-shadow-md">
+        <div v-if="movie.director" class="flex items-center gap-2 mt-1 text-sm opacity-90 drop-shadow-md">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
               stroke-linecap="round"

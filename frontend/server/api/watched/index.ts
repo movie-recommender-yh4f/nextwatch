@@ -1,6 +1,7 @@
 import { getMethod } from 'h3'
 import { getAuthorizedUser } from '../../utils/auth'
 
+// Canonical type: app/types/movie.ts — keep in sync
 interface WatchedMovie {
   tmdbId: number
   title: string

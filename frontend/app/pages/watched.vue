@@ -18,7 +18,7 @@
         @click="openDetails(movie.tmdbId)"
       >
         <img
-          :src="`${IMAGE_BASE}${movie.posterPath}`"
+          :src="posterUrl(movie.posterPath)"
           class="w-20 h-28 object-cover rounded-lg flex-shrink-0"
         />
         <div class="flex flex-col justify-center">
@@ -40,7 +40,8 @@
 <script setup lang="ts">
 import type { Movie } from '~/types/movie'
 
-const { IMAGE_BASE, watchedMovies, getMovieDetails } = useMovies()
+const { watchedMovies } = useWatchedMovies()
+const { getMovieDetails } = useMovieDetails()
 const selectedMovie = ref<Movie | null>(null)
 
 const openDetails = async (tmdbId: number) => {

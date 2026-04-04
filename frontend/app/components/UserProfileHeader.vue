@@ -51,7 +51,7 @@
 
       <template v-else>
         <h2 class="text-2xl font-bold text-gray-900 dark:text-white text-center truncate">
-          {{ user?.user_metadata?.full_name || 'User' }}
+          {{ user?.user_metadata?.username || user?.user_metadata?.full_name || 'User' }}
         </h2>
         <button
           @click="startEditing"

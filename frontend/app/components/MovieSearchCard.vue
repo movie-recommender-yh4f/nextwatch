@@ -1,6 +1,7 @@
 <template>
   <div
-    class="bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col relative"
+    class="bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col relative cursor-pointer"
+    @click="$emit('details', movie)"
   >
     <div class="aspect-[2/3] bg-gray-200 dark:bg-gray-700 relative">
       <img
@@ -39,6 +40,7 @@
       <button
         v-if="isWatched"
         disabled
+        @click.stop
         class="w-full py-2 bg-gray-100 dark:bg-gray-700 text-gray-400 rounded-lg text-xs font-bold flex justify-center items-center gap-1 cursor-not-allowed"
       >
         <svg
@@ -58,7 +60,7 @@
       </button>
       <button
         v-else
-        @click="$emit('add', movie)"
+        @click.stop="$emit('add', movie)"
         class="w-full py-2 bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 hover:bg-rose-500 hover:text-white transition-colors rounded-lg text-xs font-bold flex justify-center items-center gap-1"
       >
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -80,5 +82,5 @@ defineProps({
   movie: { type: Object, required: true },
   isWatched: { type: Boolean, required: true },
 })
-defineEmits(['add'])
+defineEmits(['add', 'details'])
 </script>

@@ -1,6 +1,7 @@
 import { fetchTmdb } from '../../utils/tmdb'
 
 interface TmdbSearchMovie {
+  id: number
   title: string
   original_title: string
   poster_path: string | null
@@ -47,6 +48,7 @@ export default defineEventHandler(async (event) => {
   })
 
   const results = validMovies.map((movie) => ({
+    id: movie.id,
     title: movie.title,
     original_title: movie.original_title,
     poster_path: movie.poster_path,

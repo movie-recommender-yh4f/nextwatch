@@ -47,11 +47,12 @@ export const useAuth = () => {
     }
   }
 
-  const signup = async (email: string, password: string) => {
+  const signup = async (email: string, password: string, username?: string) => {
     try {
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
+        options: username ? { data: { username } } : undefined,
       })
 
       if (error) throw error

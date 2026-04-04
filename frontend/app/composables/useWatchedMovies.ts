@@ -100,7 +100,8 @@ export const useWatchedMovies = () => {
 
       const path = posterPath(movie.poster)
 
-      if (!watchedMovies.value.some((s) => s.tmdbId === movie.id)) {
+      const alreadyInState = watchedMovies.value.some((s) => s.tmdbId === movie.id)
+      if (!alreadyInState) {
         watchedMovies.value.push({
           tmdbId: movie.id,
           title: movie.title,
@@ -109,20 +110,29 @@ export const useWatchedMovies = () => {
         })
       }
 
-      await $fetch('/api/watched', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
-        body: {
-          movie: {
-            tmdbId: movie.id,
-            title: movie.title,
-            year: movie.year,
-            posterPath: path,
+      try {
+        await $fetch('/api/watched', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
           },
-        },
-      })
+          body: {
+            movie: {
+              tmdbId: movie.id,
+              title: movie.title,
+              year: movie.year,
+              posterPath: path,
+            },
+          },
+        })
+      } catch (fetchError) {
+        // Revert the optimistic push if the API call failed
+        if (!alreadyInState) {
+          watchedMovies.value = watchedMovies.value.filter((m) => m.tmdbId !== movie.id)
+        }
+        console.error('Failed to mark movie as watched in Supabase:', fetchError)
+        return 'error'
+      }
     } catch (error) {
       console.error('Failed to mark movie as watched in Supabase:', error)
       return 'error'

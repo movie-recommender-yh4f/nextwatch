@@ -38,4 +38,3 @@ export async function fetchTmdb(path: string, query: TmdbQuery = {}): Promise<un
     })
   }
 }
-2

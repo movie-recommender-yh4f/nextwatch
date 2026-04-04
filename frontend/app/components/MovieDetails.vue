@@ -62,6 +62,29 @@
         </div>
 
         <p class="text-gray-600 dark:text-gray-300 leading-relaxed">{{ movie.description }}</p>
+
+        <div v-if="showAddButton" class="mt-6">
+          <button
+            v-if="isWatched"
+            disabled
+            class="w-full py-3 bg-gray-100 dark:bg-gray-700 text-gray-400 rounded-xl text-sm font-bold flex justify-center items-center gap-2 cursor-not-allowed"
+          >
+            <svg class="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            </svg>
+            Already Watched
+          </button>
+          <button
+            v-else
+            @click="$emit('add')"
+            class="w-full py-3 bg-rose-500 hover:bg-rose-600 text-white rounded-xl text-sm font-bold flex justify-center items-center gap-2 transition-colors"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            </svg>
+            Add to Watched
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -74,9 +97,11 @@ import type { Movie } from '~/types/movie'
 const props = defineProps<{
   isOpen: boolean
   movie: Movie | null
+  showAddButton?: boolean
+  isWatched?: boolean
 }>()
 
-defineEmits(['close'])
+defineEmits(['close', 'add'])
 
 const trailerFailed = ref(false)
 let player: any = null

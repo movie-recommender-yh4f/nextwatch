@@ -17,6 +17,15 @@
 
       <form @submit.prevent="submitAuth" class="flex flex-col gap-4">
         <input
+          v-if="authView === 'register'"
+          v-model="username"
+          type="text"
+          placeholder="Username"
+          required
+          class="w-full bg-gray-100 dark:bg-gray-700 dark:text-white rounded-xl py-3 px-4 outline-none focus:ring-2 focus:ring-rose-500 transition-all"
+        />
+
+        <input
           v-model="email"
           type="email"
           placeholder="Email address"
@@ -136,9 +145,12 @@ import { ref } from 'vue'
 
 const { login, signup, resetPassword, signInWithGoogle } = useAuth()
 
+const emit = defineEmits(['authenticated'])
+
 const authView = ref('login')
 const email = ref('')
 const password = ref('')
+const username = ref('')
 const isLoading = ref(false)
 const isGoogleLoading = ref(false)
 const errorMessage = ref('')
@@ -149,6 +161,7 @@ const switchView = (view) => {
   errorMessage.value = ''
   successMessage.value = ''
   password.value = ''
+  username.value = ''
 }
 
 const submitAuth = async () => {
@@ -161,11 +174,15 @@ const submitAuth = async () => {
       const { error } = await login(email.value, password.value)
       if (error) throw error
       successMessage.value = 'Login successful!'
+      setTimeout(() => emit('authenticated'), 1000)
     } else if (authView.value === 'register') {
       if (password.value.length < 6) {
         throw new Error('Password must be at least 6 characters')
       }
-      const { error } = await signup(email.value, password.value)
+      if (!username.value.trim()) {
+        throw new Error('Username is required')
+      }
+      const { error } = await signup(email.value, password.value, username.value.trim())
       if (error) throw error
       successMessage.value = 'Registration successful! You can now log in.'
       setTimeout(() => switchView('login'), 2000)
@@ -193,7 +210,8 @@ const handleGoogleSignIn = async () => {
       isGoogleLoading.value = false
     }, 3000)
   } catch (error) {
-    errorMessage.value = 'Google Sign-In failed. Please try again.'
+    const details = error instanceof Error ? error.message : ''
+    errorMessage.value = `Google Sign-In failed. Please try again.${details ? ` ${details}` : ''}`
     isGoogleLoading.value = false
   }
 }

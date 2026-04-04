@@ -77,9 +77,21 @@
           :movie="movie"
           :is-watched="isAlreadyWatched(movie.id)"
           @add="addToWatched"
+          @details="openDetails"
         />
       </div>
     </div>
+
+    <MovieDetails
+      :is-open="isModalOpen"
+      :movie="selectedMovie"
+      :show-add-button="true"
+      :is-watched="selectedMovie ? isAlreadyWatched(selectedMovie.id) : false"
+      @close="closeDetails"
+      @add="addToWatchedFromModal"
+    />
+
+    <LoginPromptModal :is-open="showLoginModal" @close="showLoginModal = false" />
   </div>
 </template>
 
@@ -88,11 +100,18 @@ import { ref } from 'vue'
 
 const { user } = useAuth()
 const { markAsWatched, queuePendingWatchedMovie, watchedMovies } = useWatchedMovies()
+const { getMovieDetails } = useMovieDetails()
 
 const searchQuery = ref('')
 const searchResults = ref([])
 const isSearching = ref(false)
 let debounceTimeout = null
+
+const isModalOpen = ref(false)
+const selectedMovie = ref(null)
+const isLoadingDetails = ref(false)
+
+const showLoginModal = ref(false)
 
 const searchTMDB = async (query) => {
   if (!query) {
@@ -126,24 +145,58 @@ const clearSearch = () => {
 }
 
 const isAlreadyWatched = (tmdbId) => {
-  return watchedMovies.value.some((movie) => movie.tmdbId === tmdbId || movie.id === tmdbId)
+  return watchedMovies.value.some((movie) => movie.tmdbId === tmdbId)
 }
+
+const openDetails = async (movie) => {
+  if (isLoadingDetails.value) return
+  isLoadingDetails.value = true
+  try {
+    selectedMovie.value = await getMovieDetails(movie.id)
+    isModalOpen.value = true
+  } catch (error) {
+    console.error('Failed to load movie details:', error)
+  } finally {
+    isLoadingDetails.value = false
+  }
+}
+
+const closeDetails = () => {
+  isModalOpen.value = false
+  selectedMovie.value = null
+}
+
+const buildMovieToSave = (movie) => ({
+  ...movie,
+  tmdbId: movie.id,
+  poster: posterUrl(movie.poster_path),
+  year: movie.release_date ? parseInt(movie.release_date.split('-')[0]) : 0,
+})
 
 const addToWatched = async (movie) => {
   if (!user.value) {
-    alert('You must be logged in to add a movie to your list!')
+    showLoginModal.value = true
     return
   }
 
-  const movieToSave = {
-    ...movie,
-    tmdbId: movie.id,
-    poster: posterUrl(movie.poster_path),
-  }
-
+  const movieToSave = buildMovieToSave(movie)
   const status = await markAsWatched(movieToSave)
   if (status === 'unauthorized' || status === 'error') {
     queuePendingWatchedMovie(movieToSave)
+  }
+}
+
+const addToWatchedFromModal = async () => {
+  if (!selectedMovie.value) return
+
+  if (!user.value) {
+    showLoginModal.value = true
+    return
+  }
+
+  const status = await markAsWatched(selectedMovie.value)
+  if (status === 'unauthorized' || status === 'error') {
+    queuePendingWatchedMovie(selectedMovie.value)
   }
 }
 </script>

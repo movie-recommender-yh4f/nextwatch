@@ -1,7 +1,7 @@
 <template>
   <div
     class="relative w-full h-full rounded-2xl overflow-hidden shadow-md bg-gray-900 cursor-pointer"
-    @click="$emit('open-details', movie)"
+    @click="openDetails"
   >
     <img
       :src="movie.image"
@@ -92,16 +92,42 @@
         </button>
       </div>
     </div>
+
+    <MovieDetails :is-open="isDetailsOpen" :movie="detailedMovie" @close="closeDetails" />
   </div>
 </template>
 
 <script setup>
-defineProps({
+import { ref } from 'vue'
+
+const props = defineProps({
   movie: {
     type: Object,
     required: true,
   },
 })
 
-defineEmits(['open-details', 'dislike', 'watched', 'to-watch'])
+defineEmits(['dislike', 'watched', 'to-watch'])
+
+const { getMovieDetails } = useMovieDetails()
+
+const isDetailsOpen = ref(false)
+const detailedMovie = ref(null)
+
+const openDetails = async () => {
+  isDetailsOpen.value = true
+  try {
+    detailedMovie.value = await getMovieDetails(props.movie.id)
+  } catch (error) {
+    console.error('Failed to load movie details:', error)
+    isDetailsOpen.value = false
+  }
+}
+
+const closeDetails = () => {
+  isDetailsOpen.value = false
+  setTimeout(() => {
+    detailedMovie.value = null
+  }, 300)
+}
 </script>

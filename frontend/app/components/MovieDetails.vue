@@ -5,53 +5,37 @@
     @click.self="$emit('close')"
   >
     <div
-      class="bg-gray-900 rounded-2xl w-full max-w-4xl overflow-hidden shadow-2xl relative flex flex-col max-h-[90vh]"
+      class="bg-white dark:bg-gray-900 rounded-2xl w-full max-w-4xl overflow-hidden shadow-2xl relative flex flex-col max-h-[90vh]"
     >
       <button
         @click="$emit('close')"
-        class="absolute top-3 right-3 text-white bg-black/50 hover:bg-black/80 rounded-full p-2 z-10 transition-colors"
+        class="absolute top-3 right-3 text-gray-700 dark:text-white bg-white/50 dark:bg-black/50 hover:bg-white/80 dark:hover:bg-black/80 rounded-full p-2 z-10 transition-colors"
       >
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M6 18L18 6M6 6l12 12"
-          ></path>
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
         </svg>
       </button>
 
       <div class="relative w-full pt-[56.25%] bg-black flex-shrink-0">
-        <iframe
-          v-if="movie.trailerUrl"
-          :src="movie.trailerUrl"
-          class="absolute top-0 left-0 w-full h-full"
-          frameborder="0"
-          allow="autoplay; encrypted-media"
-          allowfullscreen
-        ></iframe>
         <div
-          v-else
-          class="absolute top-0 left-0 w-full h-full flex items-center justify-center text-gray-500"
-        >
-          <span class="flex flex-col items-center gap-2">
-            <svg class="w-12 h-12 opacity-50" fill="currentColor" viewBox="0 0 24 24">
-              <path
-                d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"
-              />
-            </svg>
-            Trailer not available
-          </span>
-        </div>
+          v-if="trailerVideoId && !trailerFailed"
+          :id="playerId"
+          class="absolute top-0 left-0 w-full h-full"
+        ></div>
+        <img
+          v-if="!trailerVideoId || trailerFailed"
+          :src="movie.poster"
+          :alt="movie.title"
+          class="absolute top-0 left-0 w-full h-full object-cover"
+        />
       </div>
 
-      <div class="p-6 overflow-y-auto text-white">
-        <h2 class="text-2xl sm:text-3xl font-bold mb-2">
-          {{ movie.title }}
-        </h2>
+      <div class="p-6 overflow-y-auto text-gray-900 dark:text-white">
+        <h2 class="text-2xl sm:text-3xl font-bold mb-2">{{ movie.title }}</h2>
 
-        <div class="flex items-center gap-4 text-sm text-gray-400 mb-4">
+        <div class="flex items-center gap-3 text-sm text-gray-500 dark:text-gray-400 mb-4">
           <span v-if="movie.year">{{ movie.year }}</span>
+          <span v-if="movie.duration && movie.duration !== 'N/A'">{{ movie.duration }}</span>
           <span v-if="movie.rating" class="flex items-center gap-1 text-amber-500">
             <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
               <path
@@ -62,21 +46,121 @@
           </span>
         </div>
 
-        <p class="text-gray-300 leading-relaxed">
-          {{ movie.description || movie.overview || 'No description available for this movie.' }}
-        </p>
+        <div v-if="movie.genres?.length" class="flex flex-wrap gap-2 mb-4">
+          <span
+            v-for="genre in movie.genres"
+            :key="genre"
+            class="px-3 py-1 bg-gray-200 dark:bg-gray-800 text-gray-600 dark:text-gray-300 rounded-full text-xs font-medium"
+          >
+            {{ genre }}
+          </span>
+        </div>
+
+        <div v-if="movie.actors?.length" class="mb-4">
+          <h3 class="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Cast</h3>
+          <p class="text-gray-600 dark:text-gray-300 text-sm">{{ movie.actors.join(', ') }}</p>
+        </div>
+
+        <p class="text-gray-600 dark:text-gray-300 leading-relaxed">{{ movie.description }}</p>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { computed, ref, watch, onBeforeUnmount, nextTick } from 'vue'
 import type { Movie } from '~/types/movie'
 
-defineProps<{
+const props = defineProps<{
   isOpen: boolean
   movie: Movie | null
 }>()
 
 defineEmits(['close'])
+
+const trailerFailed = ref(false)
+let player: any = null
+const playerId = `yt-player-${Math.random().toString(36).slice(2, 9)}`
+
+const trailerVideoId = computed(() => {
+  const trailer = props.movie?.trailer
+  if (!trailer) return null
+  const match = trailer.match(/[?&]v=([^&]+)/)
+  return match ? match[1] : null
+})
+
+function loadYouTubeAPI(): Promise<void> {
+  return new Promise((resolve) => {
+    if ((window as any).YT?.Player) {
+      resolve()
+      return
+    }
+    if (!document.getElementById('yt-iframe-api')) {
+      const tag = document.createElement('script')
+      tag.id = 'yt-iframe-api'
+      tag.src = 'https://www.youtube.com/iframe_api'
+      document.head.appendChild(tag)
+    }
+    const existing = (window as any).onYouTubeIframeAPIReady
+    ;(window as any).onYouTubeIframeAPIReady = () => {
+      existing?.()
+      resolve()
+    }
+  })
+}
+
+function destroyPlayer() {
+  if (player) {
+    try { player.destroy() } catch {}
+    player = null
+  }
+}
+
+async function createPlayer(videoId: string) {
+  destroyPlayer()
+  await loadYouTubeAPI()
+  await nextTick()
+
+  const container = document.getElementById(playerId)
+  if (!container) return
+
+  player = new (window as any).YT.Player(playerId, {
+    videoId,
+    width: '100%',
+    height: '100%',
+    playerVars: { autoplay: 0, modestbranding: 1, rel: 0 },
+    events: {
+      onError: (event: any) => {
+        // 101 and 150 = video not allowed to be embedded / age-restricted
+        if ([101, 150].includes(event.data)) {
+          trailerFailed.value = true
+          destroyPlayer()
+        }
+      },
+    },
+  })
+}
+
+watch(() => props.movie, async (movie) => {
+  trailerFailed.value = false
+  destroyPlayer()
+
+  if (!movie) return
+
+  const videoId = trailerVideoId.value
+  if (!videoId) return
+
+  await nextTick()
+  createPlayer(videoId)
+}, { immediate: true })
+
+watch(() => props.isOpen, (open) => {
+  if (!open) {
+    destroyPlayer()
+  }
+})
+
+onBeforeUnmount(() => {
+  destroyPlayer()
+})
 </script>

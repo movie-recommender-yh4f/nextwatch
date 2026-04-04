@@ -22,15 +22,20 @@ import { ref } from 'vue'
 
 const { user } = useAuth()
 const { watchedMovies } = useWatchedMovies()
+const { getMovieDetails } = useMovieDetails()
 
 const loading = ref(false)
 
 const isModalOpen = ref(false)
 const selectedMovie = ref(null)
 
-const openMovieDetails = (movie) => {
-  selectedMovie.value = movie
-  isModalOpen.value = true
+const openMovieDetails = async (movie) => {
+  try {
+    selectedMovie.value = await getMovieDetails(movie.tmdbId)
+    isModalOpen.value = true
+  } catch (error) {
+    console.error('Failed to load movie details:', error)
+  }
 }
 
 const closeMovieDetails = () => {

@@ -1,6 +1,6 @@
 <template>
-  <div v-if="loading" class="flex justify-center w-full py-10">
-    <LoadingSpinner />
+  <div v-if="loading" class="w-full">
+    <SkeletonWatchedGrid />
   </div>
 
   <div v-else class="w-full flex flex-col gap-10">
@@ -19,15 +19,21 @@
         You haven't marked any movies as watched yet.
       </div>
 
-      <div
+      <TransitionGroup
         v-else
+        name="list"
+        tag="div"
         class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6"
+        @before-enter="onBeforeEnter"
+        @enter="onEnter"
+        @leave="onLeave"
       >
         <div
-          v-for="movie in movies"
+          v-for="(movie, index) in movies"
           :key="movie.tmdbId"
+          :data-index="index"
           @click="$emit('open-details', movie)"
-          class="aspect-[2/3] rounded-xl overflow-hidden bg-gray-200 dark:bg-gray-700 shadow-sm relative group cursor-pointer"
+          class="aspect-[2/3] rounded-xl overflow-hidden bg-gray-200 dark:bg-gray-700 shadow-sm relative group cursor-pointer transition-transform duration-200 hover:scale-[1.03]"
         >
           <img
             :src="posterUrl(movie.posterPath)"
@@ -54,7 +60,7 @@
             >
           </div>
         </div>
-      </div>
+      </TransitionGroup>
     </div>
   </div>
 </template>
@@ -64,4 +70,22 @@ import type { WatchedMovie } from '~/types/movie'
 
 defineProps<{ movies: WatchedMovie[]; loading: boolean }>()
 defineEmits<{ 'open-details': [movie: WatchedMovie]; 'remove': [tmdbId: number] }>()
+
+const onBeforeEnter = (el: Element) => {
+  const htmlEl = el as HTMLElement
+  htmlEl.style.opacity = '0'
+  htmlEl.style.transform = 'translateY(20px)'
+}
+const onEnter = (el: Element, done: () => void) => {
+  const htmlEl = el as HTMLElement
+  const delay = Math.min(Number(htmlEl.dataset.index) * 50, 500)
+  htmlEl.style.transition = `opacity 300ms ease ${delay}ms, transform 300ms ease ${delay}ms`
+  void htmlEl.offsetHeight
+  htmlEl.style.opacity = '1'
+  htmlEl.style.transform = 'translateY(0)'
+  setTimeout(done, 300 + delay)
+}
+const onLeave = (_el: Element, done: () => void) => {
+  done()
+}
 </script>

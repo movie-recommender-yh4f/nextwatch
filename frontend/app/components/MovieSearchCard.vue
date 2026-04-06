@@ -1,6 +1,6 @@
 <template>
   <div
-    class="bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col relative cursor-pointer"
+    class="bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col relative cursor-pointer transition-transform duration-200 hover:scale-[1.02]"
     @click="$emit('details', movie)"
   >
     <div class="aspect-[2/3] bg-gray-200 dark:bg-gray-700 relative">

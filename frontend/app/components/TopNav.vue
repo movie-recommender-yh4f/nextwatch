@@ -3,8 +3,8 @@
     <div class="flex justify-between items-center p-4 w-full max-w-md mx-auto">
       <NuxtLink
         to="/profile"
-        class="text-gray-300 dark:text-gray-500 transition-colors hover:text-rose-400"
-        active-class="!text-rose-500"
+        class="nav-link text-gray-300 dark:text-gray-500 transition-colors hover:text-rose-400"
+        active-class="!text-rose-500 nav-link-active"
       >
         <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 24 24">
           <path
@@ -15,7 +15,7 @@
 
       <NuxtLink
         to="/"
-        class="flex items-center bg-gray-50 dark:bg-gray-700 rounded-full py-1 px-3 shadow-sm transition-all text-gray-300 dark:text-gray-500 hover:text-rose-400"
+        class="nav-link flex items-center bg-gray-50 dark:bg-gray-700 rounded-full py-1 px-3 shadow-sm transition-all text-gray-300 dark:text-gray-500 hover:text-rose-400"
         exact-active-class="ring-2 ring-rose-200 !bg-white dark:!bg-gray-600 !text-rose-500"
       >
         <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
@@ -27,8 +27,8 @@
 
       <NuxtLink
         to="/chat"
-        class="text-gray-300 dark:text-gray-500 transition-colors hover:text-rose-400"
-        active-class="!text-rose-500"
+        class="nav-link text-gray-300 dark:text-gray-500 transition-colors hover:text-rose-400"
+        active-class="!text-rose-500 nav-link-active"
       >
         <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 24 24">
           <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z" />
@@ -37,8 +37,8 @@
 
       <NuxtLink
         to="/search"
-        class="text-gray-300 dark:text-gray-500 transition-colors hover:text-rose-400"
-        active-class="!text-rose-500"
+        class="nav-link text-gray-300 dark:text-gray-500 transition-colors hover:text-rose-400"
+        active-class="!text-rose-500 nav-link-active"
       >
         <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 24 24">
           <path
@@ -49,7 +49,7 @@
 
       <button
         @click="toggleDark()"
-        class="text-gray-300 dark:text-gray-500 transition-colors hover:text-rose-400"
+        class="btn-press text-gray-300 dark:text-gray-500 transition-colors hover:text-rose-400"
       >
         <svg v-if="isDark" class="w-7 h-7" fill="currentColor" viewBox="0 0 24 24">
           <path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1zM5.99 4.58a.996.996 0 00-1.41 0 .996.996 0 000 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41L5.99 4.58zm12.37 12.37a.996.996 0 00-1.41 0 .996.996 0 000 1.41l1.06 1.06c.39.39 1.03.39 1.41 0a.996.996 0 000-1.41l-1.06-1.06zm1.06-10.96a.996.996 0 000-1.41.996.996 0 00-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06zM7.05 18.36a.996.996 0 000-1.41.996.996 0 00-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06z" />

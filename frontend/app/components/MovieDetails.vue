@@ -2,13 +2,15 @@
   <div
     v-if="isOpen && movie"
     class="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 p-4 sm:p-6 backdrop-blur-sm"
-    @click.self="$emit('close')"
+    @click.self="closePanel"
   >
-    <div
-      class="bg-white dark:bg-gray-900 rounded-2xl w-full max-w-4xl overflow-hidden shadow-2xl relative flex flex-col max-h-[90vh]"
-    >
+    <Transition name="modal" appear @after-leave="emit('close')">
+      <div
+        v-if="showPanel"
+        class="bg-white dark:bg-gray-900 rounded-2xl w-full max-w-4xl overflow-hidden shadow-2xl relative flex flex-col max-h-[90vh]"
+      >
       <button
-        @click="$emit('close')"
+        @click="closePanel"
         class="absolute top-3 right-3 text-gray-700 dark:text-white bg-white/50 dark:bg-black/50 hover:bg-white/80 dark:hover:bg-black/80 rounded-full p-2 z-10 transition-colors"
       >
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -96,7 +98,7 @@
           <button
             v-else
             @click="$emit('add')"
-            class="w-full py-3 bg-rose-500 hover:bg-rose-600 text-white rounded-xl text-sm font-bold flex justify-center items-center gap-2 transition-colors"
+            class="btn-press w-full py-3 bg-rose-500 hover:bg-rose-600 text-white rounded-xl text-sm font-bold flex justify-center items-center gap-2 transition-colors"
           >
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
@@ -110,7 +112,8 @@
           </button>
         </div>
       </div>
-    </div>
+      </div>
+    </Transition>
   </div>
 </template>
 
@@ -133,7 +136,23 @@ const props = defineProps<{
   isWatched?: boolean
 }>()
 
-defineEmits(['close', 'add'])
+const emit = defineEmits(['close', 'add'])
+
+const showPanel = ref(false)
+
+watch(
+  () => props.isOpen && !!props.movie,
+  (visible) => {
+    if (visible) {
+      nextTick(() => { showPanel.value = true })
+    }
+  },
+  { immediate: true }
+)
+
+function closePanel() {
+  showPanel.value = false
+}
 
 const trailerFailed = ref(false)
 let player: YouTubePlayerInstance | null = null

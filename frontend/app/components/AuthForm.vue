@@ -1,63 +1,67 @@
 <template>
   <div class="flex-1 flex flex-col justify-center items-center h-full p-4 w-full">
     <div
-      class="w-full max-w-md bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 flex flex-col gap-4"
+      class="auth-card-enter w-full max-w-md bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 flex flex-col gap-4"
     >
-      <div class="text-center mb-6">
-        <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-          <span v-if="authView === 'login'">Welcome Back</span>
-          <span v-else-if="authView === 'register'">Create Account</span>
-          <span v-else>Reset Password</span>
-        </h2>
-        <p v-if="authView === 'login'" class="text-gray-500 dark:text-gray-400 text-sm">
-          Log in to access your movie recommendations
-        </p>
-        <p v-if="authView === 'register'" class="text-gray-500 dark:text-gray-400 text-sm">
-          Find your next favorite movie
-        </p>
-      </div>
+      <Transition name="auth-switch" mode="out-in">
+        <div :key="authView" class="text-center mb-6">
+          <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+            <span v-if="authView === 'login'">Welcome Back</span>
+            <span v-else-if="authView === 'register'">Create Account</span>
+            <span v-else>Reset Password</span>
+          </h2>
+          <p v-if="authView === 'login'" class="text-gray-500 dark:text-gray-400 text-sm">
+            Log in to access your movie recommendations
+          </p>
+          <p v-if="authView === 'register'" class="text-gray-500 dark:text-gray-400 text-sm">
+            Find your next favorite movie
+          </p>
+        </div>
+      </Transition>
 
       <AlertMessage type="error" :message="errorMessage" />
       <AlertMessage type="success" :message="successMessage" />
 
-      <form @submit.prevent="submitAuth" class="flex flex-col gap-4">
-        <input
-          v-if="authView === 'register'"
-          v-model="username"
-          type="text"
-          placeholder="Username"
-          required
-          class="w-full bg-gray-100 dark:bg-gray-700 dark:text-white rounded-xl py-3 px-4 outline-none focus:ring-2 focus:ring-rose-500 transition-all"
-        />
+      <Transition name="auth-switch" mode="out-in">
+        <form :key="authView" @submit.prevent="submitAuth" class="auth-field-stagger flex flex-col gap-4">
+          <input
+            v-if="authView === 'register'"
+            v-model="username"
+            type="text"
+            placeholder="Username"
+            required
+            class="w-full bg-gray-100 dark:bg-gray-700 dark:text-white rounded-xl py-3 px-4 outline-none focus:ring-2 focus:ring-rose-500 transition-all"
+          />
 
-        <input
-          v-model="email"
-          type="email"
-          placeholder="Email address"
-          required
-          class="w-full bg-gray-100 dark:bg-gray-700 dark:text-white rounded-xl py-3 px-4 outline-none focus:ring-2 focus:ring-rose-500 transition-all"
-        />
+          <input
+            v-model="email"
+            type="email"
+            placeholder="Email address"
+            required
+            class="w-full bg-gray-100 dark:bg-gray-700 dark:text-white rounded-xl py-3 px-4 outline-none focus:ring-2 focus:ring-rose-500 transition-all"
+          />
 
-        <input
-          v-if="authView !== 'forgot'"
-          v-model="password"
-          type="password"
-          placeholder="Password"
-          required
-          class="w-full bg-gray-100 dark:bg-gray-700 dark:text-white rounded-xl py-3 px-4 outline-none focus:ring-2 focus:ring-rose-500 transition-all"
-        />
+          <input
+            v-if="authView !== 'forgot'"
+            v-model="password"
+            type="password"
+            placeholder="Password"
+            required
+            class="w-full bg-gray-100 dark:bg-gray-700 dark:text-white rounded-xl py-3 px-4 outline-none focus:ring-2 focus:ring-rose-500 transition-all"
+          />
 
-        <button
-          type="submit"
-          :disabled="isLoading || isGoogleLoading"
-          class="w-full bg-rose-500 text-white rounded-xl py-3 px-6 font-semibold hover:bg-rose-600 transition-colors shadow-md mt-2 flex justify-center items-center h-12 disabled:opacity-70"
-        >
-          <LoadingSpinner v-if="isLoading" size="h-5 w-5" color="text-white" />
-          <span v-else-if="authView === 'login'">Log In</span>
-          <span v-else-if="authView === 'register'">Sign Up</span>
-          <span v-else>Send Reset Link</span>
-        </button>
-      </form>
+          <button
+            type="submit"
+            :disabled="isLoading || isGoogleLoading"
+            class="btn-press w-full bg-rose-500 text-white rounded-xl py-3 px-6 font-semibold hover:bg-rose-600 transition-colors shadow-md mt-2 flex justify-center items-center h-12 disabled:opacity-70"
+          >
+            <LoadingSpinner v-if="isLoading" size="h-5 w-5" color="text-white" />
+            <span v-else-if="authView === 'login'">Log In</span>
+            <span v-else-if="authView === 'register'">Sign Up</span>
+            <span v-else>Send Reset Link</span>
+          </button>
+        </form>
+      </Transition>
 
       <div class="mt-4 flex flex-col items-center gap-3 text-sm">
         <template v-if="authView === 'login'">
@@ -118,7 +122,7 @@
         v-if="authView !== 'forgot'"
         @click="handleGoogleSignIn"
         :disabled="isLoading || isGoogleLoading"
-        class="w-full flex items-center justify-center gap-3 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-200 py-3 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-600 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:cursor-not-allowed transition-colors font-medium h-12 shadow-sm"
+        class="btn-press w-full flex items-center justify-center gap-3 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-200 py-3 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-600 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:cursor-not-allowed transition-colors font-medium h-12 shadow-sm"
       >
         <svg v-if="!isGoogleLoading" class="w-5 h-5" viewBox="0 0 24 24">
           <path

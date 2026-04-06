@@ -3,6 +3,10 @@ export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
   modules: ['@nuxtjs/tailwindcss', '@vueuse/nuxt', '@nuxt/eslint'],
+  css: ['~/assets/css/transitions.css'],
+  app: {
+    pageTransition: { name: 'page', mode: 'out-in' },
+  },
   runtimeConfig: {
     tmdbApiKey: process.env.NUXT_TMDB_API_KEY ?? '',
     geminiApiKey: process.env.NUXT_GEMINI_API_KEY ?? '',

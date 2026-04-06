@@ -1,14 +1,20 @@
 <template>
   <div class="flex flex-col h-[calc(100vh-72px)] max-w-md mx-auto bg-white dark:bg-gray-800">
-    <div class="flex-1 overflow-y-auto p-4 space-y-4" ref="messagesContainer">
-      <div v-if="messages.length === 0" class="flex flex-col items-center justify-center h-full text-gray-400 dark:text-gray-500">
-        <svg class="w-16 h-16 mb-4" fill="currentColor" viewBox="0 0 24 24">
-          <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z" />
-        </svg>
-        <p class="text-lg font-medium">Start a conversation</p>
-        <p class="text-sm mt-1">Ask anything about movies!</p>
-      </div>
+    <div v-if="messages.length === 0" class="flex-1 overflow-y-auto p-4 flex flex-col items-center justify-center text-gray-400 dark:text-gray-500">
+      <svg class="w-16 h-16 mb-4" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z" />
+      </svg>
+      <p class="text-lg font-medium">Start a conversation</p>
+      <p class="text-sm mt-1">Ask anything about movies!</p>
+    </div>
 
+    <TransitionGroup
+      v-else
+      name="list"
+      tag="div"
+      class="flex-1 overflow-y-auto p-4 space-y-4"
+      ref="messagesContainer"
+    >
       <div
         v-for="(msg, i) in messages"
         :key="i"
@@ -24,7 +30,7 @@
           {{ msg.content }}
         </div>
       </div>
-    </div>
+    </TransitionGroup>
 
     <div class="p-4 border-t border-gray-200 dark:border-gray-700">
       <form @submit.prevent="sendMessage" class="flex gap-2">

@@ -45,7 +45,7 @@
       <div class="flex justify-center items-center gap-4 sm:gap-6 mt-2 pb-2">
         <button
           @click.stop="$emit('dislike', movie)"
-          class="w-14 h-14 rounded-full bg-black/40 flex items-center justify-center backdrop-blur-md hover:bg-black/60 hover:text-red-400 transition-all border border-white/20 pointer-events-auto shadow-lg"
+          class="btn-press w-14 h-14 rounded-full bg-black/40 flex items-center justify-center backdrop-blur-md hover:bg-black/60 hover:text-red-400 transition-all border border-white/20 pointer-events-auto shadow-lg"
         >
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
@@ -59,7 +59,7 @@
 
         <button
           @click.stop="$emit('watched', movie)"
-          class="w-16 h-16 rounded-full bg-white flex items-center justify-center text-gray-900 hover:scale-105 transition-all shadow-xl pointer-events-auto"
+          class="btn-press w-16 h-16 rounded-full bg-white flex items-center justify-center text-gray-900 hover:scale-105 transition-all shadow-xl pointer-events-auto"
         >
           <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
@@ -79,7 +79,7 @@
 
         <button
           @click.stop="$emit('to-watch', movie)"
-          class="w-14 h-14 rounded-full bg-black/40 flex items-center justify-center backdrop-blur-md hover:bg-black/60 hover:text-green-400 transition-all border border-white/20 pointer-events-auto shadow-lg"
+          class="btn-press w-14 h-14 rounded-full bg-black/40 flex items-center justify-center backdrop-blur-md hover:bg-black/60 hover:text-green-400 transition-all border border-white/20 pointer-events-auto shadow-lg"
         >
           <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path

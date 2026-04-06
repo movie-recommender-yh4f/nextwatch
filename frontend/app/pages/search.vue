@@ -37,8 +37,8 @@
     </div>
 
     <div class="flex-1 overflow-y-auto pb-20">
-      <div v-if="isSearching" class="flex justify-center py-10">
-        <LoadingSpinner />
+      <div v-if="isSearching" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
+        <SkeletonSearchCard v-for="n in 6" :key="n" />
       </div>
 
       <div
@@ -68,18 +68,25 @@
         <p>No results for "{{ searchQuery }}"</p>
       </div>
 
-      <div
+      <TransitionGroup
+        name="list"
+        tag="div"
         class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6"
+        @before-enter="onBeforeEnter"
+        @enter="onEnter"
+        @before-leave="onBeforeLeave"
+        @leave="onLeave"
       >
         <MovieSearchCard
-          v-for="movie in searchResults"
+          v-for="(movie, index) in searchResults"
           :key="movie.id"
+          :data-index="index"
           :movie="movie"
           :is-watched="isAlreadyWatched(movie.id)"
           @add="addToWatched"
           @details="openDetails"
         />
-      </div>
+      </TransitionGroup>
     </div>
 
     <MovieDetails
@@ -102,8 +109,37 @@ const { user, isAuthenticated } = useAuth()
 const { markAsWatched, queuePendingWatchedMovie, removePendingWatchedMovie, watchedMovies } = useWatchedMovies()
 const { getMovieDetails } = useMovieDetails()
 
-const searchQuery = ref('')
-const searchResults = ref([])
+const onBeforeEnter = (el) => {
+  el.style.opacity = '0'
+  el.style.transform = 'translateY(20px)'
+}
+const onEnter = (el, done) => {
+  const delay = Math.min(Number(el.dataset.index) * 50, 500)
+  el.style.transition = `opacity 300ms ease ${delay}ms, transform 300ms ease ${delay}ms`
+  void el.offsetHeight
+  el.style.opacity = '1'
+  el.style.transform = 'translateY(0)'
+  setTimeout(done, 300 + delay)
+}
+const onBeforeLeave = (el) => {
+  const rect = el.getBoundingClientRect()
+  el.style.position = 'fixed'
+  el.style.top = `${rect.top}px`
+  el.style.left = `${rect.left}px`
+  el.style.width = `${rect.width}px`
+  el.style.height = `${rect.height}px`
+  el.style.zIndex = '1'
+}
+const onLeave = (el, done) => {
+  el.style.transition = 'opacity 250ms ease, transform 250ms ease'
+  void el.offsetHeight
+  el.style.opacity = '0'
+  el.style.transform = 'scale(0)'
+  setTimeout(done, 250)
+}
+
+const searchQuery = useState('search-query', () => '')
+const searchResults = useState('search-results', () => [])
 const isSearching = ref(false)
 let debounceTimeout = null
 

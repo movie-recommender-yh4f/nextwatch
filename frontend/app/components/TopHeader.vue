@@ -23,6 +23,9 @@
 const mode = useColorMode()
 const isDark = computed(() => mode.value === 'dark')
 const toggleDark = () => {
+  const el = document.documentElement
+  el.classList.add('theme-transitioning')
   mode.value = isDark.value ? 'light' : 'dark'
+  setTimeout(() => el.classList.remove('theme-transitioning'), 400)
 }
 </script>

@@ -151,10 +151,10 @@
 
 /* ===== Icon spin (theme toggle) ===== */
 .icon-spin-enter-active {
-  animation: spin-in 300ms ease;
+  animation: spin-in 200ms ease;
 }
 .icon-spin-leave-active {
-  animation: spin-out 150ms ease;
+  animation: spin-out 100ms ease;
 }
 @keyframes spin-in {
   from { transform: rotate(-180deg); opacity: 0; }
@@ -183,4 +183,13 @@
 }
 .nav-link-active::after {
   width: 16px;
+}
+
+/* ===== Theme switch (temporary global transition) ===== */
+html.theme-transitioning,
+html.theme-transitioning *,
+html.theme-transitioning *::before,
+html.theme-transitioning *::after {
+  transition: background-color 300ms ease, color 300ms ease,
+              border-color 300ms ease, fill 300ms ease !important;
 }

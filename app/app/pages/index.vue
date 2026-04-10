@@ -115,7 +115,7 @@ const currentMovieFormatted = computed(() => {
     year: details?.year ?? movie.year,
     image: details?.poster ?? '',
     genre: details?.genres?.join(', ') ?? 'Unknown Genre',
-    director: null,
+    director: details?.directors?.[0] ?? null,
   }
 })
 

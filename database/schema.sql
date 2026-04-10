@@ -63,6 +63,7 @@ CREATE TABLE IF NOT EXISTS movies_metadata (
     vote_count    INTEGER,
     genres        TEXT,
     cast          TEXT,
+    directors     TEXT,
     trailer_key   TEXT,
     cached_at     INTEGER
 );

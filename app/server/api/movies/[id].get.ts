@@ -9,7 +9,10 @@ interface TMDBMovieDetails {
   overview: string
   runtime: number | null
   genres: Array<{ id: number; name: string }>
-  credits: { cast: Array<{ name: string }> }
+  credits: {
+    cast: Array<{ name: string }>
+    crew: Array<{ name: string; job: string }>
+  }
   videos: {
     results: Array<{
       key: string
@@ -31,6 +34,7 @@ interface MovieResponse {
   runtime: number | null
   genres: string[]
   actors: string[]
+  directors?: string[]
   description: string
   trailer: string | null
 }
@@ -60,6 +64,7 @@ export default defineEventHandler(async (event): Promise<MovieResponse> => {
   if (row) {
     const genres = row.genres ? (JSON.parse(row.genres as string) as string[]) : []
     const actors = row.cast ? (JSON.parse(row.cast as string) as string[]) : []
+    const directors = row.directors ? (JSON.parse(row.directors as string) as string[]) : []
     const trailerKey = row.trailer_key as string | null
 
     return {
@@ -74,6 +79,7 @@ export default defineEventHandler(async (event): Promise<MovieResponse> => {
       runtime: (row.runtime as number | null) ?? null,
       genres,
       actors,
+      directors,
       description: (row.overview as string) ?? '',
       trailer: trailerKey ? `${YOUTUBE_BASE}${trailerKey}` : null,
     }
@@ -89,14 +95,14 @@ export default defineEventHandler(async (event): Promise<MovieResponse> => {
 
   const genres = data.genres.map((g) => g.name)
   const actors = data.credits.cast.slice(0, 5).map((actor) => actor.name)
+  const directors = data.credits.crew.filter((c) => c.job === 'Director').map((c) => c.name)
   const trailerKey = trailer?.key ?? null
 
-  // not awaiting this on purpose since we don't want to block the response
   db.execute({
     sql: `INSERT OR REPLACE INTO movies_metadata
       (tmdb_id, title, overview, poster_path, backdrop_path, release_date, runtime,
-       vote_average, vote_count, genres, cast, trailer_key, cached_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       vote_average, vote_count, genres, cast, directors, trailer_key, cached_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     args: [
       data.id,
       data.title,
@@ -109,6 +115,7 @@ export default defineEventHandler(async (event): Promise<MovieResponse> => {
       data.vote_count,
       JSON.stringify(genres),
       JSON.stringify(actors),
+      JSON.stringify(directors),
       trailerKey,
       now,
     ],
@@ -124,6 +131,7 @@ export default defineEventHandler(async (event): Promise<MovieResponse> => {
     runtime: data.runtime ?? null,
     genres,
     actors,
+    directors,
     description: data.overview,
     trailer: trailerKey ? `${YOUTUBE_BASE}${trailerKey}` : null,
   }

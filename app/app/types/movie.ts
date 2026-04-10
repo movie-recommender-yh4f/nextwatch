@@ -68,6 +68,7 @@ export interface Movie {
   runtime: number | null
   genres: string[]
   actors: string[]
+  directors?: string[]
   description: string
   trailer: string | null
 }
@@ -87,8 +88,6 @@ export interface WatchedMovie {
   title: string
   year: number
   posterPath: string
-  genres?: string[]
-  runtime?: number | null
 }
 
 export interface PendingWatchedMovie {

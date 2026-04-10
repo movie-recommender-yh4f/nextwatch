@@ -7,6 +7,8 @@ interface WatchedMovie {
   title: string
   year: number
   posterPath: string
+  genres?: string[]
+  runtime?: number | null
 }
 
 interface WatchBody {
@@ -69,12 +71,19 @@ export default defineEventHandler(async (event) => {
     )
 
     if (!alreadyWatched) {
-      watchedMovies.push({
+      const entry: WatchedMovie = {
         tmdbId: movie.tmdbId,
         title: movie.title,
         year: movie.year,
         posterPath: movie.posterPath,
-      })
+      }
+      if (Array.isArray(movie.genres) && movie.genres.length > 0) {
+        entry.genres = movie.genres
+      }
+      if (typeof movie.runtime === 'number') {
+        entry.runtime = movie.runtime
+      }
+      watchedMovies.push(entry)
     }
 
     const updatedAt = new Date().toISOString()

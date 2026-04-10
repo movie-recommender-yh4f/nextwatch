@@ -28,6 +28,7 @@ interface MovieResponse {
   rating: number
   year: number
   duration: string
+  runtime: number | null
   genres: string[]
   actors: string[]
   description: string
@@ -70,6 +71,7 @@ export default defineEventHandler(async (event): Promise<MovieResponse> => {
       duration: row.runtime
         ? `${Math.floor((row.runtime as number) / 60)}h ${(row.runtime as number) % 60}m`
         : 'N/A',
+      runtime: (row.runtime as number | null) ?? null,
       genres,
       actors,
       description: (row.overview as string) ?? '',
@@ -119,6 +121,7 @@ export default defineEventHandler(async (event): Promise<MovieResponse> => {
     rating: Math.round(data.vote_average * 10) / 10,
     year: parseInt(data.release_date?.split('-')[0] || '0'),
     duration: data.runtime ? `${Math.floor(data.runtime / 60)}h ${data.runtime % 60}m` : 'N/A',
+    runtime: data.runtime ?? null,
     genres,
     actors,
     description: data.overview,

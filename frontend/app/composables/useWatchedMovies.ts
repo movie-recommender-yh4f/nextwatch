@@ -86,7 +86,7 @@ export const useWatchedMovies = () => {
   }
 
   const markAsWatched = async (
-    movie: Pick<MoviePreview, 'id' | 'title' | 'year' | 'poster'>
+    movie: Pick<MoviePreview, 'id' | 'title' | 'year' | 'poster'> & { genres?: string[]; runtime?: number | null }
   ): Promise<'ok' | 'unauthorized' | 'error'> => {
     try {
       const {
@@ -101,28 +101,34 @@ export const useWatchedMovies = () => {
 
       const alreadyInState = watchedMovies.value.some((s) => s.tmdbId === movie.id)
       if (!alreadyInState) {
-        watchedMovies.value.push({
+        const entry: WatchedMovie = {
           tmdbId: movie.id,
           title: movie.title,
           year: movie.year,
           posterPath: path,
-        })
+        }
+        if (movie.genres?.length) entry.genres = movie.genres
+        if (typeof movie.runtime === 'number') entry.runtime = movie.runtime
+        watchedMovies.value.push(entry)
       }
 
       try {
+        const body: Record<string, unknown> = {
+          movie: {
+            tmdbId: movie.id,
+            title: movie.title,
+            year: movie.year,
+            posterPath: path,
+            ...(movie.genres?.length ? { genres: movie.genres } : {}),
+            ...(typeof movie.runtime === 'number' ? { runtime: movie.runtime } : {}),
+          },
+        }
         await $fetch('/api/watched', {
           method: 'POST',
           headers: {
             Authorization: `Bearer ${session.access_token}`,
           },
-          body: {
-            movie: {
-              tmdbId: movie.id,
-              title: movie.title,
-              year: movie.year,
-              posterPath: path,
-            },
-          },
+          body,
         })
       } catch (fetchError) {
         // Revert the optimistic push if the API call failed

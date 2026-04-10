@@ -65,6 +65,7 @@ export interface Movie {
   rating: number
   year: number
   duration: string
+  runtime: number | null
   genres: string[]
   actors: string[]
   description: string
@@ -86,6 +87,8 @@ export interface WatchedMovie {
   title: string
   year: number
   posterPath: string
+  genres?: string[]
+  runtime?: number | null
 }
 
 export interface PendingWatchedMovie {

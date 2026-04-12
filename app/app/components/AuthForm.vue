@@ -63,6 +63,15 @@
             @error="onCaptchaError"
           />
 
+          <VueHcaptcha
+            v-if="authView === 'login'"
+            ref="loginCaptchaWidget"
+            :sitekey="siteKey"
+            size="invisible"
+            @verify="onLoginCaptchaVerify"
+            @error="onLoginCaptchaError"
+          />
+
           <button
             type="submit"
             :disabled="isLoading || isGoogleLoading"
@@ -158,16 +167,6 @@
         <LoadingSpinner v-else size="h-5 w-5" color="text-gray-500" />
         <span>{{ isGoogleLoading ? 'Signing in...' : 'Continue with Google' }}</span>
       </button>
-      <div>
-        <VueHcaptcha
-          ref="loginCaptchaWidget"
-          :sitekey="siteKey"
-          size="invisible"
-          @verify="onLoginCaptchaVerify"
-          @error="onLoginCaptchaError"
-          @expired="onLoginCaptchaExpire"
-        />
-      </div>
     </div>
   </div>
 </template>
@@ -230,12 +229,6 @@ const onLoginCaptchaVerify = (token) => {
 
 const onLoginCaptchaError = () => {
   rejectLoginCaptcha?.(new Error('Captcha failed. Please try again.'))
-  resolveLoginCaptcha = null
-  rejectLoginCaptcha = null
-}
-
-const onLoginCaptchaExpire = () => {
-  rejectLoginCaptcha?.(new Error('Captcha expired. Please try again.'))
   resolveLoginCaptcha = null
   rejectLoginCaptcha = null
 }

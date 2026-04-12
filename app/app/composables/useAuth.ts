@@ -44,11 +44,12 @@ export const useAuth = () => {
     }
   }
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string, captchaToken?: string) => {
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
+        options: captchaToken ? { captchaToken } : undefined,
       })
 
       if (error) throw error
@@ -64,12 +65,15 @@ export const useAuth = () => {
     }
   }
 
-  const signup = async (email: string, password: string, username?: string) => {
+  const signup = async (email: string, password: string, username?: string, captchaToken?: string) => {
     try {
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
-        options: username ? { data: { full_name: username } } : undefined,
+        options: {
+          ...(username ? { data: { full_name: username } } : {}),
+          ...(captchaToken ? { captchaToken } : {}),
+        },
       })
 
       if (error) throw error

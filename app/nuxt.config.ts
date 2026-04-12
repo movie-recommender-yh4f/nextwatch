@@ -16,6 +16,7 @@ export default defineNuxtConfig({
     public: {
       supabaseUrl: process.env.NUXT_PUBLIC_SUPABASE_URL ?? '',
       supabaseKey: process.env.NUXT_PUBLIC_SUPABASE_ANON_KEY ?? '',
+      hcaptchaSiteKey: process.env.NUXT_PUBLIC_HCAPTCHA_SITE_KEY ?? '',
     },
     upstash: {
       redisUrl: process.env.UPSTASH_REDIS_REST_URL ?? '',
@@ -32,7 +33,12 @@ export default defineNuxtConfig({
   },
   vite: {
     optimizeDeps: {
-      include: ['@vue/devtools-core', '@vue/devtools-kit', '@supabase/supabase-js'],
+      include: [
+        '@vue/devtools-core',
+        '@vue/devtools-kit',
+        '@supabase/supabase-js',
+        '@hcaptcha/vue3-hcaptcha',
+      ],
     },
   },
 })

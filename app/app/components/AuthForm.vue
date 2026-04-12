@@ -23,7 +23,11 @@
       <AlertMessage type="success" :message="successMessage" />
 
       <Transition name="auth-switch" mode="out-in">
-        <form :key="authView" @submit.prevent="submitAuth" class="auth-field-stagger flex flex-col gap-4">
+        <form
+          :key="authView"
+          @submit.prevent="submitAuth"
+          class="auth-field-stagger flex flex-col gap-4"
+        >
           <input
             v-if="authView === 'register'"
             v-model="username"
@@ -48,6 +52,15 @@
             placeholder="Password"
             required
             class="w-full bg-gray-100 dark:bg-gray-700 dark:text-white rounded-xl py-3 px-4 outline-none focus:ring-2 focus:ring-rose-500 transition-all"
+          />
+
+          <VueHcaptcha
+            v-if="authView === 'register'"
+            ref="captchaWidget"
+            :sitekey="siteKey"
+            @verify="onCaptchaVerify"
+            @expired="onCaptchaExpire"
+            @error="onCaptchaError"
           />
 
           <button
@@ -145,14 +158,28 @@
         <LoadingSpinner v-else size="h-5 w-5" color="text-gray-500" />
         <span>{{ isGoogleLoading ? 'Signing in...' : 'Continue with Google' }}</span>
       </button>
+      <div>
+        <VueHcaptcha
+          ref="loginCaptchaWidget"
+          :sitekey="siteKey"
+          size="invisible"
+          @verify="onLoginCaptchaVerify"
+          @error="onLoginCaptchaError"
+          @expired="onLoginCaptchaExpire"
+        />
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
 import { ref } from 'vue'
+import VueHcaptcha from '@hcaptcha/vue3-hcaptcha'
 
 const { login, signup, resetPassword, signInWithGoogle } = useAuth()
+
+const config = useRuntimeConfig()
+const siteKey = config.public.hcaptchaSiteKey
 
 const emit = defineEmits(['authenticated'])
 
@@ -164,6 +191,54 @@ const isLoading = ref(false)
 const isGoogleLoading = ref(false)
 const errorMessage = ref('')
 const successMessage = ref('')
+const captchaToken = ref(null)
+const captchaWidget = ref(null)
+const loginCaptchaWidget = ref(null)
+
+const onCaptchaVerify = (token) => {
+  captchaToken.value = token
+}
+
+const onCaptchaExpire = () => {
+  captchaToken.value = null
+}
+
+const onCaptchaError = () => {
+  captchaToken.value = null
+}
+
+const resetCaptcha = () => {
+  captchaToken.value = null
+  captchaWidget.value?.reset()
+}
+
+let resolveLoginCaptcha = null
+let rejectLoginCaptcha = null
+
+const getLoginCaptchaToken = () =>
+  new Promise((resolve, reject) => {
+    resolveLoginCaptcha = resolve
+    rejectLoginCaptcha = reject
+    loginCaptchaWidget.value.execute()
+  })
+
+const onLoginCaptchaVerify = (token) => {
+  resolveLoginCaptcha?.(token)
+  resolveLoginCaptcha = null
+  rejectLoginCaptcha = null
+}
+
+const onLoginCaptchaError = () => {
+  rejectLoginCaptcha?.(new Error('Captcha failed. Please try again.'))
+  resolveLoginCaptcha = null
+  rejectLoginCaptcha = null
+}
+
+const onLoginCaptchaExpire = () => {
+  rejectLoginCaptcha?.(new Error('Captcha expired. Please try again.'))
+  resolveLoginCaptcha = null
+  rejectLoginCaptcha = null
+}
 
 const switchView = (view) => {
   authView.value = view
@@ -171,6 +246,7 @@ const switchView = (view) => {
   successMessage.value = ''
   password.value = ''
   username.value = ''
+  resetCaptcha()
 }
 
 const submitAuth = async () => {
@@ -180,18 +256,27 @@ const submitAuth = async () => {
 
   try {
     if (authView.value === 'login') {
-      const { error } = await login(email.value, password.value)
+      const token = await getLoginCaptchaToken()
+      const { error } = await login(email.value, password.value, token)
       if (error) throw error
       successMessage.value = 'Login successful!'
       setTimeout(() => emit('authenticated'), 1000)
     } else if (authView.value === 'register') {
+      if (!captchaToken.value) {
+        throw new Error('Please complete the captcha verification')
+      }
       if (password.value.length < 6) {
         throw new Error('Password must be at least 6 characters')
       }
       if (!username.value.trim()) {
         throw new Error('Username is required')
       }
-      const { error } = await signup(email.value, password.value, username.value.trim())
+      const { error } = await signup(
+        email.value,
+        password.value,
+        username.value.trim(),
+        captchaToken.value ?? undefined
+      )
       if (error) throw error
       successMessage.value = 'Registration successful! Please verify your email before logging in.'
       setTimeout(() => switchView('login'), 2000)
@@ -203,6 +288,11 @@ const submitAuth = async () => {
     }
   } catch (error) {
     errorMessage.value = error.message || 'Something went wrong.'
+    if (authView.value === 'register') {
+      resetCaptcha()
+    } else if (authView.value === 'login') {
+      loginCaptchaWidget.value?.reset()
+    }
   } finally {
     isLoading.value = false
   }

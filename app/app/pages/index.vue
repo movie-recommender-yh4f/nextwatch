@@ -1,7 +1,8 @@
 <template>
   <div class="h-full flex flex-col bg-gray-50 dark:bg-gray-900 relative overflow-hidden">
     <div class="pt-12 px-6 text-center">
-      <h1 class="text-3xl font-bold text-gray-900 dark:text-white">For You</h1>
+      <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Movies For You</h1>
+      <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">Find your next movie.</p>
     </div>
     <div class="flex-1 relative w-full px-6 -mt-6 flex flex-col items-center justify-center">
       <div v-if="pending" class="w-full max-w-sm h-[65vh] relative mx-auto">

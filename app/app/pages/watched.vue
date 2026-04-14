@@ -1,5 +1,5 @@
 <template>
-  <div class="p-4 pt-10 pb-20 text-gray-900 dark:text-white">
+  <div class="p-4 pt-10 pb-20 text-gray-900 dark:text-white h-full overflow-y-auto">
     <!-- Header -->
     <div class="flex justify-between items-end mb-4">
       <h1 class="text-3xl font-bold">Already Watched</h1>
@@ -49,7 +49,7 @@
         <!-- Genre dropdown -->
         <div class="relative">
           <button
-            @click="showGenreDropdown = !showGenreDropdown"
+            @click="toggleDropdown('genre')"
             class="flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-xl border transition-colors"
             :class="selectedGenres.length > 0
               ? 'bg-rose-500 text-white border-rose-500'
@@ -98,7 +98,7 @@
         <!-- Length dropdown -->
         <div class="relative">
           <button
-            @click="showLengthDropdown = !showLengthDropdown"
+            @click="toggleDropdown('length')"
             class="flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-xl border transition-colors"
             :class="selectedRuntime
               ? 'bg-rose-500 text-white border-rose-500'
@@ -117,7 +117,7 @@
             class="absolute z-30 mt-1 left-0 w-48 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 py-1"
           >
             <button
-              @click="selectedRuntime = null; showLengthDropdown = false"
+              @click="selectedRuntime = null; openDropdown = null"
               class="w-full px-3 py-2 text-sm text-left hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
               :class="!selectedRuntime ? 'text-rose-500 font-medium' : 'text-gray-700 dark:text-gray-300'"
             >
@@ -126,7 +126,7 @@
             <button
               v-for="range in RUNTIME_RANGES"
               :key="range.label"
-              @click="selectedRuntime = range; showLengthDropdown = false"
+              @click="selectedRuntime = range; openDropdown = null"
               class="w-full px-3 py-2 text-sm text-left hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
               :class="selectedRuntime?.label === range.label ? 'text-rose-500 font-medium' : 'text-gray-700 dark:text-gray-300'"
             >
@@ -138,7 +138,7 @@
         <!-- Sort dropdown -->
         <div class="relative">
           <button
-            @click="showSortDropdown = !showSortDropdown"
+            @click="toggleDropdown('sort')"
             class="flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-xl border transition-colors"
             :class="sortBy !== 'default'
               ? 'bg-rose-500 text-white border-rose-500'
@@ -159,7 +159,7 @@
             <button
               v-for="(label, key) in sortLabels"
               :key="key"
-              @click="sortBy = key as SortOption; showSortDropdown = false"
+              @click="sortBy = key as SortOption; openDropdown = null"
               class="w-full px-3 py-2 text-sm text-left hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
               :class="sortBy === key ? 'text-rose-500 font-medium' : 'text-gray-700 dark:text-gray-300'"
             >
@@ -293,10 +293,15 @@ const {
   RUNTIME_RANGES,
 } = useWatchedFilters(watchedMovies)
 
-// Dropdown visibility
-const showGenreDropdown = ref(false)
-const showLengthDropdown = ref(false)
-const showSortDropdown = ref(false)
+// Dropdown visibility (only one open at a time)
+type DropdownName = 'genre' | 'length' | 'sort'
+const openDropdown = ref<DropdownName | null>(null)
+const showGenreDropdown = computed(() => openDropdown.value === 'genre')
+const showLengthDropdown = computed(() => openDropdown.value === 'length')
+const showSortDropdown = computed(() => openDropdown.value === 'sort')
+const toggleDropdown = (name: DropdownName) => {
+  openDropdown.value = openDropdown.value === name ? null : name
+}
 
 const sortLabels: Record<SortOption, string> = {
   'default': 'Default',
@@ -310,9 +315,7 @@ const sortLabels: Record<SortOption, string> = {
 const closeDropdowns = (e: MouseEvent) => {
   const target = e.target as HTMLElement
   if (!target.closest('.relative')) {
-    showGenreDropdown.value = false
-    showLengthDropdown.value = false
-    showSortDropdown.value = false
+    openDropdown.value = null
   }
 }
 

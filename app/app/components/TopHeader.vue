@@ -1,5 +1,5 @@
 <template>
-  <header class="w-full bg-white dark:bg-gray-800 z-50">
+  <header class="w-full bg-white dark:bg-gray-800 z-50 border-b border-gray-100 dark:border-gray-700">
     <div class="flex justify-between items-center px-4 py-3 w-full max-w-md mx-auto">
       <span class="text-xl font-bold text-gray-800 dark:text-white tracking-tight">recc</span>
       <button

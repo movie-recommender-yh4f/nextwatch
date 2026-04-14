@@ -5,12 +5,24 @@
 
   <div v-else class="w-full flex flex-col gap-10">
     <div class="w-full">
-      <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center justify-between">
-        Watched Movies
-        <span class="text-sm font-normal text-gray-500 dark:text-gray-400 bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded-full">{{
-          movies.length
-        }}</span>
-      </h3>
+      <div class="mb-4 flex items-center justify-between">
+        <h3 class="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+          Watched Movies
+          <span class="text-sm font-normal text-gray-500 dark:text-gray-400 bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded-full">{{
+            movies.length
+          }}</span>
+        </h3>
+        <NuxtLink
+          v-if="movies.length > 0"
+          to="/watched"
+          class="text-sm font-medium text-rose-500 hover:text-rose-600 inline-flex items-center gap-1"
+        >
+          View all
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+          </svg>
+        </NuxtLink>
+      </div>
 
       <div
         v-if="movies.length === 0"

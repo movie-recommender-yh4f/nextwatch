@@ -1,4 +1,10 @@
-import type { MyListMovie, MoviePreview, PendingMyListMovie, WatchedMovie } from '~/types/movie'
+import type {
+  MyListMovie,
+  MoviePreview,
+  PendingMyListMovie,
+  WatchedMovie,
+  MyListPatchBody,
+} from '~/types/movie'
 
 const PENDING_MY_LIST_STORAGE_KEY = 'movie-recommender-pending-my-list'
 
@@ -93,13 +99,55 @@ export const useMyList = () => {
       })
 
       myList.value = response.movies
+
+      const { getMovieDetails } = useMovieDetails()
+
+      for (const movie of myList.value) {
+        if (
+          movie.genres &&
+          movie.genres.length > 0 &&
+          movie.runtime !== undefined &&
+          movie.posterPath
+        ) {
+          continue
+        }
+
+        try {
+          const details = await getMovieDetails(movie.tmdbId)
+          const patch: MyListPatchBody = { tmdbId: movie.tmdbId }
+
+          if (!movie.genres || movie.genres.length === 0) {
+            patch.genres = details.genres
+            movie.genres = details.genres
+          }
+          if (movie.runtime === undefined) {
+            patch.runtime = details.runtime
+            movie.runtime = details.runtime
+          }
+          if (!movie.posterPath) {
+            patch.posterPath = posterPath(details.poster)
+            movie.posterPath = posterPath(details.poster)
+          }
+
+          await $fetch('/api/mylist', {
+            method: 'PATCH',
+            headers: { Authorization: `Bearer ${token}` },
+            body: patch,
+          })
+        } catch {
+          // best-effort enrichment
+        }
+      }
     } catch {
       // failed to load my list
     }
   }
 
   const addToMyList = async (
-    movie: Pick<MoviePreview, 'id' | 'title' | 'year' | 'poster'>
+    movie: Pick<MoviePreview, 'id' | 'title' | 'year' | 'poster'> & {
+      genres?: string[]
+      runtime?: number | null
+    }
   ): Promise<'ok' | 'unauthorized' | 'error'> => {
     try {
       const {
@@ -114,12 +162,15 @@ export const useMyList = () => {
 
       const alreadyInState = myList.value.some((m) => m.tmdbId === movie.id)
       if (!alreadyInState) {
-        myList.value.push({
+        const entry: MyListMovie = {
           tmdbId: movie.id,
           title: movie.title,
           year: movie.year,
           posterPath: path,
-        })
+        }
+        if (movie.genres?.length) entry.genres = movie.genres
+        if (typeof movie.runtime === 'number') entry.runtime = movie.runtime
+        myList.value.push(entry)
       }
 
       try {
@@ -134,6 +185,8 @@ export const useMyList = () => {
               title: movie.title,
               year: movie.year,
               posterPath: path,
+              ...(movie.genres?.length ? { genres: movie.genres } : {}),
+              ...(typeof movie.runtime === 'number' ? { runtime: movie.runtime } : {}),
             },
           },
         })
@@ -177,17 +230,26 @@ export const useMyList = () => {
     return 'ok'
   }
 
-  const queuePendingMyListMovie = (movie: Pick<MoviePreview, 'id' | 'title' | 'year' | 'poster'>) => {
+  const queuePendingMyListMovie = (
+    movie: Pick<MoviePreview, 'id' | 'title' | 'year' | 'poster'> & {
+      genres?: string[]
+      runtime?: number | null
+    }
+  ) => {
     if (pendingMyListMovies.value.some((pendingMovie) => pendingMovie.id === movie.id)) {
       return
     }
 
-    pendingMyListMovies.value.push({
+    const entry: PendingMyListMovie = {
       id: movie.id,
       title: movie.title,
       year: movie.year,
       posterPath: posterPath(movie.poster),
-    })
+    }
+    if (movie.genres?.length) entry.genres = movie.genres
+    if (typeof movie.runtime === 'number') entry.runtime = movie.runtime
+
+    pendingMyListMovies.value.push(entry)
 
     persistPendingMyListToStorage()
   }
@@ -248,17 +310,22 @@ export const useMyList = () => {
                 title: movie.title,
                 year: movie.year,
                 posterPath: movie.posterPath,
+                ...(movie.genres?.length ? { genres: movie.genres } : {}),
+                ...(typeof movie.runtime === 'number' ? { runtime: movie.runtime } : {}),
               },
             },
           })
 
           if (!myList.value.some((listMovie) => listMovie.tmdbId === movie.id)) {
-            myList.value.push({
+            const entry: MyListMovie = {
               tmdbId: movie.id,
               title: movie.title,
               year: movie.year,
               posterPath: movie.posterPath,
-            })
+            }
+            if (movie.genres?.length) entry.genres = movie.genres
+            if (typeof movie.runtime === 'number') entry.runtime = movie.runtime
+            myList.value.push(entry)
           }
 
           removePendingMyListMovie(movie.id)

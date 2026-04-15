@@ -13,6 +13,15 @@ interface WatchBody {
   movie?: Partial<WatchedMovie>
 }
 
+interface WatchedPatchBody {
+  tmdbId?: number
+  genres?: string[]
+  runtime?: number | null
+  posterPath?: string
+  title?: string
+  year?: number
+}
+
 export default defineEventHandler(async (event) => {
   const method = event.method
   const { supabase, user } = await getAuthorizedUser(event)
@@ -157,6 +166,52 @@ export default defineEventHandler(async (event) => {
       success: true,
       watchedCount: filtered.length,
     }
+  }
+
+  if (method === 'PATCH') {
+    const body = await readBody<WatchedPatchBody>(event)
+
+    if (typeof body.tmdbId !== 'number') {
+      throw createError({ statusCode: 400, statusMessage: 'Invalid tmdbId' })
+    }
+
+    const { data: existing, error: selectError } = await supabase
+      .from('watched_movies')
+      .select('movies')
+      .eq('user_id', user.id)
+      .limit(1)
+      .maybeSingle()
+
+    if (selectError) {
+      throw createError({ statusCode: 500, statusMessage: selectError.message })
+    }
+
+    if (!existing) {
+      throw createError({ statusCode: 404, statusMessage: 'No watched movies found' })
+    }
+
+    const watchedMovies = Array.isArray(existing.movies) ? (existing.movies as WatchedMovie[]) : []
+    const updated = watchedMovies.map((m) => {
+      if (m.tmdbId !== body.tmdbId) return m
+      const patched = { ...m }
+      if (Array.isArray(body.genres)) patched.genres = body.genres
+      if (body.runtime !== undefined) patched.runtime = body.runtime
+      if (body.posterPath) patched.posterPath = body.posterPath
+      if (body.title) patched.title = body.title
+      if (typeof body.year === 'number') patched.year = body.year
+      return patched
+    })
+
+    const { error: updateError } = await supabase
+      .from('watched_movies')
+      .update({ movies: updated, updated_at: new Date().toISOString() })
+      .eq('user_id', user.id)
+
+    if (updateError) {
+      throw createError({ statusCode: 500, statusMessage: updateError.message })
+    }
+
+    return { success: true }
   }
 
   throw createError({ statusCode: 405, statusMessage: 'Method Not Allowed' })

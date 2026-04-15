@@ -1,4 +1,9 @@
-import type { WatchedMovie, PendingWatchedMovie, MoviePreview } from '~/types/movie'
+import type {
+  WatchedMovie,
+  PendingWatchedMovie,
+  MoviePreview,
+  WatchedPatchBody,
+} from '~/types/movie'
 
 const PENDING_WATCHED_STORAGE_KEY = 'movie-recommender-pending-watched'
 
@@ -93,6 +98,45 @@ export const useWatchedMovies = () => {
       })
 
       watchedMovies.value = response.movies
+
+      const { getMovieDetails } = useMovieDetails()
+
+      for (const movie of watchedMovies.value) {
+        if (
+          movie.genres &&
+          movie.genres.length > 0 &&
+          movie.runtime !== undefined &&
+          movie.posterPath
+        ) {
+          continue
+        }
+
+        try {
+          const details = await getMovieDetails(movie.tmdbId)
+          const patch: WatchedPatchBody = { tmdbId: movie.tmdbId }
+
+          if (!movie.genres || movie.genres.length === 0) {
+            patch.genres = details.genres
+            movie.genres = details.genres
+          }
+          if (movie.runtime === undefined) {
+            patch.runtime = details.runtime
+            movie.runtime = details.runtime
+          }
+          if (!movie.posterPath) {
+            patch.posterPath = posterPath(details.poster)
+            movie.posterPath = posterPath(details.poster)
+          }
+
+          await $fetch('/api/watched', {
+            method: 'PATCH',
+            headers: { Authorization: `Bearer ${token}` },
+            body: patch,
+          })
+        } catch {
+          // best-effort enrichment
+        }
+      }
     } catch {
       // failed to load watched movies
     }

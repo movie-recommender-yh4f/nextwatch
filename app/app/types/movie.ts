@@ -88,6 +88,8 @@ export interface WatchedMovie {
   title: string
   year: number
   posterPath: string
+  genres?: string[]
+  runtime?: number | null
 }
 
 export interface PendingWatchedMovie {
@@ -95,13 +97,17 @@ export interface PendingWatchedMovie {
   title: string
   year: number
   posterPath: string
+  genres?: string[]
+  runtime?: number | null
 }
 
-export interface PendingMyListMovie {
-  id: number
-  title: string
-  year: number
-  posterPath: string
+export interface WatchedPatchBody {
+  tmdbId?: number
+  genres?: string[]
+  runtime?: number | null
+  posterPath?: string
+  title?: string
+  year?: number
 }
 
 export interface MyListMovie {
@@ -109,4 +115,24 @@ export interface MyListMovie {
   title: string
   year: number
   posterPath: string
+  genres?: string[]
+  runtime?: number | null
+}
+
+export interface PendingMyListMovie {
+  id: number
+  title: string
+  year: number
+  posterPath: string
+  genres?: string[]
+  runtime?: number | null
+}
+
+export interface MyListPatchBody {
+  tmdbId?: number
+  genres?: string[]
+  runtime?: number | null
+  posterPath?: string
+  title?: string
+  year?: number
 }

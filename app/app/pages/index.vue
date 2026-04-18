@@ -145,7 +145,7 @@
     <Transition name="fade">
       <div
         v-if="undoAction"
-        class="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 bg-gray-800 dark:bg-gray-700 text-white rounded-full px-5 py-3 shadow-lg flex items-center gap-3 max-w-sm"
+        class="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 bg-white dark:bg-gray-700 text-gray-800 dark:text-white rounded-full px-5 py-3 shadow-lg border border-gray-200 dark:border-transparent flex items-center gap-3 max-w-sm"
       >
         <span class="text-sm truncate">
           <strong>{{ undoAction.movie.title }}</strong>
@@ -153,7 +153,7 @@
         </span>
         <button
           @click="handleUndo"
-          class="text-rose-400 hover:text-rose-300 font-semibold text-sm whitespace-nowrap transition-colors"
+          class="text-rose-500 hover:text-rose-600 dark:text-rose-400 dark:hover:text-rose-300 font-semibold text-sm whitespace-nowrap transition-colors"
         >
           Undo
         </button>

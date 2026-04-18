@@ -111,7 +111,6 @@ export const useAuth = () => {
       clearWatchedMovies()
       clearMyList()
     } catch {
-      // logout failed silently
     }
   }
 
@@ -141,7 +140,6 @@ export const useAuth = () => {
     }
   }
 
-  //Login user again if there's an active session
   const initialize = async () => {
     if (hasInitializedAuth) {
       loading.value = false
@@ -175,7 +173,6 @@ export const useAuth = () => {
     }
   }
 
-  // sign in with Google OAuth
   const signInWithGoogle = async () => {
     try {
       const { data, error } = await supabase.auth.signInWithOAuth({
@@ -187,7 +184,6 @@ export const useAuth = () => {
 
       return { user: data }
     } catch {
-      // Google sign-in failed
     }
   }
 

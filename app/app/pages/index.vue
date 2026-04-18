@@ -298,7 +298,6 @@ const fetchRecommendations = async (mode = FETCH_MODE.DEFAULT) => {
     movies.value = recommendations
     originalMovies.value = recommendations
   } catch (err) {
-    console.error('[recommend] fetch failed', err)
     if (isLimitReachedError(err)) {
       errorState.value = 'limit-reached'
     } else if (isUnavailableError(err)) {

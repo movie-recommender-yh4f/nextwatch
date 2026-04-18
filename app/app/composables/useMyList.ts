@@ -3,8 +3,8 @@ import type {
   MoviePreview,
   PendingMyListMovie,
   WatchedMovie,
-  MyListPatchBody,
 } from '~/types/movie'
+import { enrichAndPatchMovies } from '~/utils/enrichMovies'
 
 const PENDING_MY_LIST_STORAGE_KEY = 'movie-recommender-pending-my-list'
 
@@ -30,45 +30,8 @@ export const useMyList = () => {
   const watchedMovies = useState<WatchedMovie[]>('watched', () => [])
   const pendingMyListMovies = useState<PendingMyListMovie[]>('pending-my-list', () => [])
 
-  const loadPendingMyListFromStorage = () => {
-    if (!import.meta.client) return
-
-    try {
-      const raw = window.localStorage.getItem(PENDING_MY_LIST_STORAGE_KEY)
-      if (!raw) {
-        pendingMyListMovies.value = []
-        return
-      }
-
-      const parsed: unknown = JSON.parse(raw)
-      if (!Array.isArray(parsed)) {
-        pendingMyListMovies.value = []
-        return
-      }
-
-      pendingMyListMovies.value = parsed.filter(isPendingMyListMovie)
-    } catch {
-      pendingMyListMovies.value = []
-    }
-  }
-
-  const persistPendingMyListToStorage = () => {
-    if (!import.meta.client) return
-
-    try {
-      if (pendingMyListMovies.value.length === 0) {
-        window.localStorage.removeItem(PENDING_MY_LIST_STORAGE_KEY)
-        return
-      }
-
-      window.localStorage.setItem(
-        PENDING_MY_LIST_STORAGE_KEY,
-        JSON.stringify(pendingMyListMovies.value)
-      )
-    } catch {
-      // persist failed silently
-    }
-  }
+  const { load: loadPendingMyListFromStorage, persist: persistPendingMyListToStorage } =
+    usePendingStorage(PENDING_MY_LIST_STORAGE_KEY, pendingMyListMovies, isPendingMyListMovie)
 
   const clearMyList = () => {
     myList.value = []
@@ -76,15 +39,7 @@ export const useMyList = () => {
 
   const syncMyListFromSupabase = async (accessToken?: string) => {
     try {
-      let token = accessToken
-
-      if (!token) {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession()
-
-        token = session?.access_token
-      }
+      const token = await resolveAccessToken(supabase, accessToken)
 
       if (!token) {
         myList.value = []
@@ -101,45 +56,8 @@ export const useMyList = () => {
       myList.value = response.movies
 
       const { getMovieDetails } = useMovieDetails()
-
-      for (const movie of myList.value) {
-        if (
-          movie.genres &&
-          movie.genres.length > 0 &&
-          movie.runtime !== undefined &&
-          movie.posterPath
-        ) {
-          continue
-        }
-
-        try {
-          const details = await getMovieDetails(movie.tmdbId)
-          const patch: MyListPatchBody = { tmdbId: movie.tmdbId }
-
-          if (!movie.genres || movie.genres.length === 0) {
-            patch.genres = details.genres
-            movie.genres = details.genres
-          }
-          if (movie.runtime === undefined) {
-            patch.runtime = details.runtime
-            movie.runtime = details.runtime
-          }
-          if (!movie.posterPath) {
-            patch.posterPath = posterPath(details.poster)
-            movie.posterPath = posterPath(details.poster)
-          }
-
-          await $fetch('/api/mylist', {
-            method: 'PATCH',
-            headers: { Authorization: `Bearer ${token}` },
-            body: patch,
-          })
-        } catch {
-          // best-effort enrichment
-        }
-      }
+      await enrichAndPatchMovies(myList.value, token, '/api/mylist', getMovieDetails)
     } catch {
-      // failed to load my list
     }
   }
 
@@ -269,15 +187,7 @@ export const useMyList = () => {
     }
 
     try {
-      let token = accessToken
-
-      if (!token) {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession()
-
-        token = session?.access_token
-      }
+      const token = await resolveAccessToken(supabase, accessToken)
 
       if (!token) {
         return 0
@@ -331,7 +241,6 @@ export const useMyList = () => {
           removePendingMyListMovie(movie.id)
           processedCount++
         } catch {
-          // failed to process pending movie
         }
       }
 

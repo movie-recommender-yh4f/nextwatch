@@ -23,7 +23,6 @@ export const useWatchedFilters = (watchedMovies: Ref<WatchedMovie[]>) => {
   const selectedRuntime = ref<RuntimeRange | null>(null)
   const sortBy = ref<SortOption>('default')
 
-  // Metadata enrichment: genres + runtime for movies that don't have it stored
   const enrichedMap = ref<Record<number, { genres: string[]; runtime: number | null }>>({})
   const isLoadingMetadata = ref(false)
   const metadataProgress = ref({ loaded: 0, total: 0 })
@@ -49,13 +48,11 @@ export const useWatchedFilters = (watchedMovies: Ref<WatchedMovie[]>) => {
   const filteredMovies = computed(() => {
     let result = [...watchedMovies.value]
 
-    // Search by title
     if (searchQuery.value.trim()) {
       const q = searchQuery.value.trim().toLowerCase()
       result = result.filter((m) => m.title.toLowerCase().includes(q))
     }
 
-    // Genre filter
     if (selectedGenres.value.length > 0) {
       result = result.filter((m) => {
         const genres = getGenres(m)
@@ -63,7 +60,6 @@ export const useWatchedFilters = (watchedMovies: Ref<WatchedMovie[]>) => {
       })
     }
 
-    // Runtime filter
     if (selectedRuntime.value) {
       const { min, max } = selectedRuntime.value
       result = result.filter((m) => {
@@ -73,7 +69,6 @@ export const useWatchedFilters = (watchedMovies: Ref<WatchedMovie[]>) => {
       })
     }
 
-    // Sort
     if (sortBy.value !== 'default') {
       result.sort((a, b) => {
         switch (sortBy.value) {
@@ -119,7 +114,6 @@ export const useWatchedFilters = (watchedMovies: Ref<WatchedMovie[]>) => {
     }
   }
 
-  // Backfill metadata for movies that don't have genres/runtime stored
   const fetchMissingMetadata = async () => {
     const missing = watchedMovies.value.filter(
       (m) => !m.genres?.length && !enrichedMap.value[m.tmdbId]
@@ -130,7 +124,6 @@ export const useWatchedFilters = (watchedMovies: Ref<WatchedMovie[]>) => {
     isLoadingMetadata.value = true
     metadataProgress.value = { loaded: 0, total: missing.length }
 
-    // Fetch in small batches to avoid overwhelming the API
     const BATCH_SIZE = 5
     for (let i = 0; i < missing.length; i += BATCH_SIZE) {
       const batch = missing.slice(i, i + BATCH_SIZE)

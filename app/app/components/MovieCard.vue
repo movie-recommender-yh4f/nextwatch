@@ -14,7 +14,6 @@
         class="absolute inset-x-0 bottom-0 h-[45%] bg-gradient-to-t from-black/95 via-black/60 to-transparent pointer-events-none z-0"
       ></div>
 
-      <!-- Status indicators -->
       <div
         v-if="isInMyList || isWatched"
         class="absolute top-3 right-3 z-20 flex flex-col gap-1.5"

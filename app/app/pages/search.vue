@@ -37,10 +37,8 @@
     </div>
 
     <div class="flex-1 overflow-y-auto overflow-x-hidden pb-20 pr-6">
-      <!-- Filters -->
       <div v-if="searchResults.length > 0 || hasActiveFilters" class="flex-shrink-0 mb-3">
         <div class="flex flex-wrap gap-2 mb-3">
-          <!-- Genre dropdown -->
           <div class="relative dropdown-wrapper">
             <button
               @click="toggleDropdown('genre')"
@@ -88,7 +86,6 @@
             </div>
           </div>
 
-          <!-- Sort dropdown -->
           <div class="relative dropdown-wrapper">
             <button
               @click="toggleDropdown('sort')"
@@ -121,7 +118,6 @@
             </div>
           </div>
 
-          <!-- Rating dropdown -->
           <div class="relative dropdown-wrapper">
             <button
               @click="toggleDropdown('rating')"
@@ -161,7 +157,6 @@
             </div>
           </div>
 
-          <!-- Hide Watched toggle -->
           <button
             @click="hideWatched = !hideWatched"
             class="flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-xl border transition-colors"
@@ -175,7 +170,6 @@
             Hide Watched
           </button>
 
-          <!-- Hide In My List toggle -->
           <button
             @click="hideInMyList = !hideInMyList"
             class="flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-xl border transition-colors"
@@ -189,7 +183,6 @@
             Hide My List
           </button>
 
-          <!-- Clear all -->
           <button
             v-if="hasActiveFilters"
             @click="clearFilters"
@@ -199,7 +192,6 @@
           </button>
         </div>
 
-        <!-- Active genre pills -->
         <div v-if="selectedGenres.length > 0" class="flex flex-wrap gap-1.5 mb-3">
           <span
             v-for="genre in selectedGenres"
@@ -215,7 +207,6 @@
           </span>
         </div>
 
-        <!-- Filtered count -->
         <div v-if="hasActiveFilters && searchResults.length > 0" class="text-xs text-gray-400 mb-3">
           {{ filteredResults.length }} of {{ searchResults.length }} results
         </div>
@@ -394,7 +385,6 @@ const clearSearch = () => {
   searchResults.value = []
 }
 
-// Filter state
 const selectedGenres = ref([])
 const sortBy = ref('default')
 const minRating = ref(null)
@@ -544,7 +534,6 @@ const openDetails = async (movie) => {
     selectedMovie.value = await getMovieDetails(movie.id)
     isModalOpen.value = true
   } catch {
-    // failed to load movie details
   } finally {
     isLoadingDetails.value = false
   }

@@ -1,6 +1,5 @@
 <template>
   <div class="p-4 pt-6 pb-20 text-gray-900 dark:text-white h-full overflow-y-auto">
-    <!-- Header -->
     <NuxtLink
       to="/profile"
       class="inline-flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400 hover:text-rose-500 dark:hover:text-rose-500 transition-colors mb-6"
@@ -22,14 +21,12 @@
       </span>
     </div>
 
-    <!-- Empty state (no movies at all) -->
     <div v-if="watchedMovies.length === 0" class="text-center text-gray-500 mt-20">
       <p>You haven't marked any movies yet.</p>
       <NuxtLink to="/" class="text-red-500 mt-2 inline-block">Go to Home</NuxtLink>
     </div>
 
     <template v-else>
-      <!-- Search bar -->
       <div class="relative w-full shadow-sm rounded-2xl overflow-hidden mb-3">
         <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
           <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -53,9 +50,7 @@
         </button>
       </div>
 
-      <!-- Filter / Sort row -->
       <div class="flex flex-wrap gap-2 mb-3">
-        <!-- Genre dropdown -->
         <div class="relative dropdown-wrapper">
           <button
             @click="toggleDropdown('genre')"
@@ -75,7 +70,6 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
             </svg>
           </button>
-          <!-- Genre dropdown panel -->
           <div
             v-if="showGenreDropdown"
             class="absolute z-30 mt-1 left-0 w-56 max-h-64 overflow-y-auto bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 py-1"
@@ -104,7 +98,6 @@
           </div>
         </div>
 
-        <!-- Length dropdown -->
         <div class="relative dropdown-wrapper">
           <button
             @click="toggleDropdown('length')"
@@ -144,7 +137,6 @@
           </div>
         </div>
 
-        <!-- Sort dropdown -->
         <div class="relative dropdown-wrapper">
           <button
             @click="toggleDropdown('sort')"
@@ -177,7 +169,6 @@
           </div>
         </div>
 
-        <!-- Clear all -->
         <button
           v-if="hasActiveFilters"
           @click="clearFilters"
@@ -187,7 +178,6 @@
         </button>
       </div>
 
-      <!-- Active filter pills -->
       <div v-if="selectedGenres.length > 0" class="flex flex-wrap gap-1.5 mb-3">
         <span
           v-for="genre in selectedGenres"
@@ -203,7 +193,6 @@
         </span>
       </div>
 
-      <!-- Metadata loading indicator -->
       <div v-if="isLoadingMetadata" class="mb-3">
         <div class="flex items-center gap-2 text-xs text-gray-400">
           <svg class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
@@ -220,7 +209,6 @@
         </div>
       </div>
 
-      <!-- No results for current filters -->
       <div
         v-if="filteredMovies.length === 0 && watchedMovies.length > 0"
         class="text-center text-gray-500 dark:text-gray-400 py-10 bg-white dark:bg-gray-800 rounded-2xl border border-dashed border-gray-300 dark:border-gray-600 mt-4"
@@ -231,7 +219,6 @@
         </button>
       </div>
 
-      <!-- Movie list -->
       <div class="space-y-3">
         <div
           v-for="movie in filteredMovies"
@@ -319,7 +306,6 @@ const {
   RUNTIME_RANGES,
 } = useWatchedFilters(watchedMovies)
 
-// Dropdown visibility (only one open at a time)
 type DropdownName = 'genre' | 'length' | 'sort'
 const openDropdown = ref<DropdownName | null>(null)
 const showGenreDropdown = computed(() => openDropdown.value === 'genre')
@@ -337,7 +323,6 @@ const sortLabels: Record<SortOption, string> = {
   'year-asc': 'Oldest first',
 }
 
-// Close dropdowns when clicking outside
 const closeDropdowns = (e: MouseEvent) => {
   const target = e.target as HTMLElement
   if (!target.closest('.dropdown-wrapper')) {
@@ -347,7 +332,6 @@ const closeDropdowns = (e: MouseEvent) => {
 
 onMounted(() => {
   document.addEventListener('click', closeDropdowns)
-  // Backfill metadata for movies missing genres/runtime
   if (watchedMovies.value.length > 0) {
     fetchMissingMetadata()
   }
@@ -357,7 +341,6 @@ onUnmounted(() => {
   document.removeEventListener('click', closeDropdowns)
 })
 
-// If movies load after mount (e.g. from sync), fetch metadata
 watch(() => watchedMovies.value.length, (newLen, oldLen) => {
   if (newLen > oldLen) {
     fetchMissingMetadata()
@@ -402,7 +385,6 @@ const openDetails = async (tmdbId: number) => {
   try {
     selectedMovie.value = await fetchMovieDetails(tmdbId)
   } catch {
-    // failed to load movie details
   }
 }
 </script>

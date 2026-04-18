@@ -2,8 +2,8 @@ import type {
   WatchedMovie,
   PendingWatchedMovie,
   MoviePreview,
-  WatchedPatchBody,
 } from '~/types/movie'
+import { enrichAndPatchMovies } from '~/utils/enrichMovies'
 
 const PENDING_WATCHED_STORAGE_KEY = 'movie-recommender-pending-watched'
 
@@ -29,45 +29,8 @@ export const useWatchedMovies = () => {
   const watchedMovies = useState<WatchedMovie[]>('watched', () => [])
   const pendingWatchedMovies = useState<PendingWatchedMovie[]>('pending-watched', () => [])
 
-  const loadPendingWatchedFromStorage = () => {
-    if (!import.meta.client) return
-
-    try {
-      const raw = window.localStorage.getItem(PENDING_WATCHED_STORAGE_KEY)
-      if (!raw) {
-        pendingWatchedMovies.value = []
-        return
-      }
-
-      const parsed: unknown = JSON.parse(raw)
-      if (!Array.isArray(parsed)) {
-        pendingWatchedMovies.value = []
-        return
-      }
-
-      pendingWatchedMovies.value = parsed.filter(isPendingWatchedMovie)
-    } catch {
-      pendingWatchedMovies.value = []
-    }
-  }
-
-  const persistPendingWatchedToStorage = () => {
-    if (!import.meta.client) return
-
-    try {
-      if (pendingWatchedMovies.value.length === 0) {
-        window.localStorage.removeItem(PENDING_WATCHED_STORAGE_KEY)
-        return
-      }
-
-      window.localStorage.setItem(
-        PENDING_WATCHED_STORAGE_KEY,
-        JSON.stringify(pendingWatchedMovies.value)
-      )
-    } catch {
-      // persist failed silently
-    }
-  }
+  const { load: loadPendingWatchedFromStorage, persist: persistPendingWatchedToStorage } =
+    usePendingStorage(PENDING_WATCHED_STORAGE_KEY, pendingWatchedMovies, isPendingWatchedMovie)
 
   const clearWatchedMovies = () => {
     watchedMovies.value = []
@@ -75,15 +38,7 @@ export const useWatchedMovies = () => {
 
   const syncWatchedMoviesFromSupabase = async (accessToken?: string) => {
     try {
-      let token = accessToken
-
-      if (!token) {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession()
-
-        token = session?.access_token
-      }
+      const token = await resolveAccessToken(supabase, accessToken)
 
       if (!token) {
         watchedMovies.value = []
@@ -100,45 +55,8 @@ export const useWatchedMovies = () => {
       watchedMovies.value = response.movies
 
       const { getMovieDetails } = useMovieDetails()
-
-      for (const movie of watchedMovies.value) {
-        if (
-          movie.genres &&
-          movie.genres.length > 0 &&
-          movie.runtime !== undefined &&
-          movie.posterPath
-        ) {
-          continue
-        }
-
-        try {
-          const details = await getMovieDetails(movie.tmdbId)
-          const patch: WatchedPatchBody = { tmdbId: movie.tmdbId }
-
-          if (!movie.genres || movie.genres.length === 0) {
-            patch.genres = details.genres
-            movie.genres = details.genres
-          }
-          if (movie.runtime === undefined) {
-            patch.runtime = details.runtime
-            movie.runtime = details.runtime
-          }
-          if (!movie.posterPath) {
-            patch.posterPath = posterPath(details.poster)
-            movie.posterPath = posterPath(details.poster)
-          }
-
-          await $fetch('/api/watched', {
-            method: 'PATCH',
-            headers: { Authorization: `Bearer ${token}` },
-            body: patch,
-          })
-        } catch {
-          // best-effort enrichment
-        }
-      }
+      await enrichAndPatchMovies(watchedMovies.value, token, '/api/watched', getMovieDetails)
     } catch {
-      // failed to load watched movies
     }
   }
 
@@ -278,15 +196,7 @@ export const useWatchedMovies = () => {
     }
 
     try {
-      let token = accessToken
-
-      if (!token) {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession()
-
-        token = session?.access_token
-      }
+      const token = await resolveAccessToken(supabase, accessToken)
 
       if (!token) {
         return 0
@@ -332,7 +242,6 @@ export const useWatchedMovies = () => {
           removePendingWatchedMovie(movie.id)
           processedCount++
         } catch {
-          // failed to process pending movie
         }
       }
 

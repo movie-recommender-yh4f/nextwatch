@@ -155,7 +155,6 @@ const openDetails = async (tmdbId: number) => {
   try {
     selectedMovie.value = await fetchMovieDetails(tmdbId)
   } catch {
-    // failed to load movie details
   }
 }
 </script>

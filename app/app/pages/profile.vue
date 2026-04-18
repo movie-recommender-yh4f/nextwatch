@@ -72,7 +72,6 @@ const openMovieDetails = async (movie) => {
     selectedMovie.value = await getMovieDetails(movie.tmdbId)
     isModalOpen.value = true
   } catch {
-    // failed to load movie details
   }
 }
 

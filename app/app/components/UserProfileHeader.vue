@@ -114,7 +114,6 @@ const saveName = async () => {
     user.value = data.user
     isEditingName.value = false
   } catch {
-    // update failed
   } finally {
     isSavingName.value = false
   }

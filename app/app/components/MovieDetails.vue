@@ -284,7 +284,6 @@ async function createPlayer(videoId: string) {
   })
 }
 
-// Sync the embedded player with the selected movie while the modal is open.
 watch(
   () => props.movie,
   async (movie) => {

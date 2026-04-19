@@ -108,6 +108,7 @@ export default defineEventHandler(async (event) => {
   const isRefresh = !isGetNew && isQueryFlagEnabled(refresh)
 
   const watchedMovies = await fetchWatchedMovies(supabase, user.id)
+  const myListMovies = await fetchMyListMovies(supabase, user.id)
   let excludedMovies: RecommendationWithId[] = []
 
   if (watchedMovies.length === 0) {
@@ -132,6 +133,7 @@ export default defineEventHandler(async (event) => {
 
   const generatedRecommendations = await getRecommendationsFromGemini(
     watchedMovies,
+    myListMovies,
     user.id,
     event,
     excludedMovies

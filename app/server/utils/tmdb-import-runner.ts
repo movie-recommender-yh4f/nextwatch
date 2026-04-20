@@ -93,10 +93,20 @@ function toError(value: unknown): Error {
   return new Error(String(value))
 }
 
+async function getMaxMovieId(db: ReturnType<typeof useDb>) : Promise<number> {
+  const result = await db.execute('SELECT tmdb_id FROM movies_index ORDER BY tmdb_id DESC LIMIT 1')
+  const id = result.rows[0]?.[0]
+  if (typeof id === 'number') return id
+
+  const parsedId = Number(id)
+  return Number.isFinite(parsedId) ? parsedId : 0
+}
+
 export async function runTmdbImport(): Promise<TmdbImportResult> {
   const db = useDb()
   const url = buildExportUrl()
   const existingCountBefore = await getMoviesIndexCount(db)
+  const maxMovieId = await getMaxMovieId(db)
 
   let batch: TmdbExportRow[] = []
   let totalSkipped = 0
@@ -129,6 +139,10 @@ export async function runTmdbImport(): Promise<TmdbImportResult> {
           return
         }
         if (!isTmdbExportRow(parsed)) {
+          totalSkipped++
+          return
+        }
+        if (parsed.id <= maxMovieId) {
           totalSkipped++
           return
         }

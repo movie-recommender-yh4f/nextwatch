@@ -19,8 +19,8 @@ Recommend exactly ${MAX_RECOMMENDATIONS} movies the user has NOT seen, following
   - Always prefer recommending movies the user has NOT yet discovered over My List entries.
 3. Aim for variety across genres and release decades while staying true to the inferred taste profile.
 4. Return movie titles in their original release language and script exactly as TMDB original titles — do not transliterate, anglicize, or use localized variants (e.g. use ゴジラ-1.0 not Godzilla Minus One).
-5. Respond ONLY with a valid JSON array of exactly ${MAX_RECOMMENDATIONS} objects, each with keys "title" and "year". No explanation, no markdown, no code fences. Example format:
-[{"title": "ゴジラ-1.0", "year": 2023}]`
+5. Respond ONLY with a valid JSON array of exactly ${MAX_RECOMMENDATIONS} objects, each with keys "name", "originalName", and "year". No explanation, no markdown, no code fences. Example format:
+[{"name": "ゴジラ-1.0", "originalName": "ゴジラ-1.0", "year": 2023}]`
 
 const RECOMMENDATION_SCHEMA: Schema = {
   type: SchemaType.ARRAY,

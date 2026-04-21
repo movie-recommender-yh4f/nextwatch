@@ -2,6 +2,7 @@ import { getAuthorizedUser } from '../../utils/auth'
 import {
   fetchWatchedMovies,
   getRecommendationsFromGemini,
+  fetchMyListMovies,
 } from '../../utils/recommendations'
 
 const MAX_WATCHED_FOR_PROMPT = 50
@@ -39,6 +40,7 @@ export default defineEventHandler(async (event) => {
   const supabaseMovies = await fetchWatchedMovies(supabase, user.id)
   const localMovies = body.movies ?? []
   const watchedMovies = mergeMovieLists(supabaseMovies, localMovies)
+  const myListMovies = await fetchMyListMovies(supabase, user.id)
 
   if (watchedMovies.length === 0) {
     throw createError({
@@ -49,6 +51,7 @@ export default defineEventHandler(async (event) => {
 
   const recommendations = await getRecommendationsFromGemini(
     watchedMovies.slice(0, MAX_WATCHED_FOR_PROMPT),
+    myListMovies.slice(0, MAX_WATCHED_FOR_PROMPT),
     user.id,
     event
   )

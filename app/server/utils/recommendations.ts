@@ -4,6 +4,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 
 export const WATCHED_MOVIES_TABLE = 'watched_movies'
 export const MY_LIST_TABLE = 'my_list_movies'
+export const MIN_RECOMMENDATIONS_TO_CACHE = 5
 const MAX_WATCHED_FOR_PROMPT = 100
 const MAX_MY_LIST_FOR_PROMPT = 100
 const MAX_RECOMMENDATIONS = 20
@@ -55,6 +56,16 @@ export interface Recommendation {
 
 export interface RecommendationWithId extends Recommendation {
   tmdbId: number | null
+}
+
+export function hasValidTmdbId(
+  recommendation: RecommendationWithId
+): recommendation is RecommendationWithId & { tmdbId: number } {
+  return recommendation.tmdbId !== null
+}
+
+export function hasEnoughRecommendationsToCache(recommendations: RecommendationWithId[]): boolean {
+  return recommendations.length >= MIN_RECOMMENDATIONS_TO_CACHE
 }
 
 export function isRecommendationArray(value: unknown): value is Recommendation[] {

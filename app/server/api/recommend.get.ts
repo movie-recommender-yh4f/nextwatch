@@ -1,7 +1,13 @@
 import { createHash } from 'node:crypto'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { getAuthorizedUser } from '../utils/auth'
-import { fetchWatchedMovies, getRecommendationsFromGemini } from '../utils/recommendations'
+import {
+  fetchMyListMovies,
+  fetchWatchedMovies,
+  getRecommendationsFromGemini,
+  hasEnoughRecommendationsToCache,
+  hasValidTmdbId,
+} from '../utils/recommendations'
 import type { RecommendationWithId, WatchedMovieRecord } from '../utils/recommendations'
 
 const RECOMMENDATIONS_TABLE = 'recommendations'
@@ -19,16 +25,15 @@ function isQueryFlagEnabled(value: unknown): boolean {
   return typeof value === 'string' && QUERY_TRUE.includes(value)
 }
 
-function hasTmdbId(
-  recommendation: RecommendationWithId
-): recommendation is RecommendationWithId & { tmdbId: number } {
-  return recommendation.tmdbId !== null
-}
-
 function filterValidRecommendations(
   recommendations: RecommendationWithId[]
 ): RecommendationWithId[] {
-  return recommendations.filter(hasTmdbId)
+  return recommendations.filter(hasValidTmdbId)
+}
+
+function canStoreRecommendations(recommendations: RecommendationWithId[]): boolean {
+  const validRecommendations = filterValidRecommendations(recommendations)
+  return hasEnoughRecommendationsToCache(validRecommendations)
 }
 
 function computeWatchedHash(movies: WatchedMovieRecord[]): string {
@@ -87,11 +92,9 @@ async function storeCachedRecommendations(
   recommendations: RecommendationWithId[],
   watchedHash: string
 ): Promise<void> {
-  const validRecommendations = filterValidRecommendations(recommendations)
-
   const { error } = await supabase.from(RECOMMENDATIONS_TABLE).upsert({
     user_id: userId,
-    recommendations: validRecommendations,
+    recommendations,
     watched_hash: watchedHash,
     expires_at: new Date(Date.now() + TTL_MS).toISOString(),
   })
@@ -118,11 +121,11 @@ export default defineEventHandler(async (event) => {
   }
 
   const watchedHash = computeWatchedHash(watchedMovies)
+  const cached = await getCachedRecommendations(supabase, user.id, watchedHash)
 
   if (!isGetNew && !isRefresh) {
-    const cached = await getCachedRecommendations(supabase, user.id, watchedHash)
     if (cached) {
-      return { recommendations: cached, cached: true }
+      return { recommendations: cached, cached: true, stale: false }
     }
   }
 
@@ -142,7 +145,11 @@ export default defineEventHandler(async (event) => {
 
   const recommendations = filterValidRecommendations(generatedRecommendations)
 
-  await storeCachedRecommendations(supabase, user.id, recommendations, watchedHash)
+  if (canStoreRecommendations(generatedRecommendations)) {
+    await storeCachedRecommendations(supabase, user.id, recommendations, watchedHash)
+  } else {
+    return { recommendations: cached, cached: true, stale: true }
+  }
 
   return { recommendations, cached: false }
 })

@@ -2,10 +2,11 @@ import { createGunzip } from 'node:zlib'
 import { createInterface } from 'node:readline'
 import { Readable } from 'node:stream'
 
-const TMDB_EXPORT_BASE_URL = 'http://files.tmdb.org/p/exports'
+const TMDB_EXPORT_BASE_URL = 'https://files.tmdb.org/p/exports'
 const BATCH_SIZE = 1500
 const MAX_IMPORT_ATTEMPTS = 5
 const MIN_POPULARITY = 0.25
+const MIN_EXPECTED_EXPORT_ROWS = 100_000
 
 interface TmdbExportRow {
   id: number
@@ -138,6 +139,7 @@ export async function runTmdbImport(options: RunTmdbImportOptions = {}): Promise
   await db.execute('DROP TRIGGER IF EXISTS movies_au')
   await db.execute('DROP TRIGGER IF EXISTS movies_ad')
 
+  let parsedRowCount = 0
   let totalSkipped = 0
   let totalAdultExcluded = 0
   let totalLowPopularityExcluded = 0
@@ -164,6 +166,7 @@ export async function runTmdbImport(options: RunTmdbImportOptions = {}): Promise
         totalSkipped++
         return
       }
+      parsedRowCount++
       if (parsed.id <= maxMovieId) {
         totalSkipped++
         return
@@ -193,6 +196,12 @@ export async function runTmdbImport(options: RunTmdbImportOptions = {}): Promise
     if (batch.length > 0) await importBatchWithRetry(db, batch, fullRefresh)
   } catch (error) {
     lastError = toError(error)
+  }
+
+  if (!lastError && parsedRowCount < MIN_EXPECTED_EXPORT_ROWS) {
+    lastError = new Error(
+      `TMDB export appears truncated: only ${parsedRowCount} valid rows received`
+    )
   }
 
   // rebuild FTS and re-enable triggers/index

@@ -12,6 +12,7 @@ import {
   GENERATED_RECOMMENDATIONS,
   INSUFFICIENT_VALID_RECOMMENDATIONS,
   MY_LIST_MOVIES,
+  recommendationIds,
   STALE_RECOMMENDATIONS,
   TEST_USER_ID,
   WATCHED_MOVIES,
@@ -51,12 +52,7 @@ Object.assign(globalThis, {
 const { default: recommendHandler } = await import('../../../server/api/recommend.get')
 
 interface MockCacheRow {
-  recommendations: Array<{
-    name: string
-    originalName: string
-    year: number
-    tmdbId: number | null
-  }>
+  tmdb_ids: number[]
   watched_hash: string
   expires_at: string
 }
@@ -67,12 +63,7 @@ interface MockSupabaseState {
   upsertError: { message: string } | null
   upsertPayload: {
     user_id: string
-    recommendations: Array<{
-      name: string
-      originalName: string
-      year: number
-      tmdbId: number | null
-    }>
+    tmdb_ids: number[]
     watched_hash: string
     expires_at: string
   } | null
@@ -115,7 +106,7 @@ function createMockSupabase(state: MockSupabaseState): SupabaseClient {
           }
 
           state.cachedRow = {
-            recommendations: cloneRecommendations(payload.recommendations),
+            tmdb_ids: [...payload.tmdb_ids],
             watched_hash: payload.watched_hash,
             expires_at: payload.expires_at,
           }
@@ -194,7 +185,7 @@ describe('/api/recommend', () => {
 
   it('returns fresh cached recommendations without calling Gemini', async () => {
     supabaseState.cachedRow = {
-      recommendations: cloneRecommendations(FRESH_CACHE_RECOMMENDATIONS),
+      tmdb_ids: recommendationIds(FRESH_CACHE_RECOMMENDATIONS),
       watched_hash: computeWatchedHash(WATCHED_MOVIES),
       expires_at: '2026-04-30T00:00:00.000Z',
     }
@@ -206,13 +197,13 @@ describe('/api/recommend', () => {
     expect(body.cached).toBe(true)
     expect(body.regenerationError).toBeNull()
     expect(body.staleRecommendations).toBeNull()
-    expect(body.recommendations).toEqual(FRESH_CACHE_RECOMMENDATIONS)
+    expect(body.recommendations).toEqual(recommendationIds(FRESH_CACHE_RECOMMENDATIONS))
     expect(getRecommendationsFromGeminiMock).not.toHaveBeenCalled()
   })
 
   it('regenerates and stores recommendations when cache is not reusable', async () => {
     supabaseState.cachedRow = {
-      recommendations: cloneRecommendations(FRESH_CACHE_RECOMMENDATIONS),
+      tmdb_ids: recommendationIds(FRESH_CACHE_RECOMMENDATIONS),
       watched_hash: 'outdated-hash',
       expires_at: '2026-04-20T00:00:00.000Z',
     }
@@ -224,14 +215,16 @@ describe('/api/recommend', () => {
     expect(body.cached).toBe(false)
     expect(body.regenerationError).toBeNull()
     expect(body.staleRecommendations).toBeNull()
-    expect(body.recommendations).toEqual(GENERATED_RECOMMENDATIONS)
+    expect(body.recommendations).toEqual(recommendationIds(GENERATED_RECOMMENDATIONS))
     expect(getRecommendationsFromGeminiMock).toHaveBeenCalledTimes(1)
-    expect(supabaseState.upsertPayload?.recommendations).toEqual(GENERATED_RECOMMENDATIONS)
+    expect(supabaseState.upsertPayload?.tmdb_ids).toEqual(
+      recommendationIds(GENERATED_RECOMMENDATIONS)
+    )
   })
 
   it('returns stale recommendations with retryable regeneration metadata for 503 failures', async () => {
     supabaseState.cachedRow = {
-      recommendations: cloneRecommendations(STALE_RECOMMENDATIONS),
+      tmdb_ids: recommendationIds(STALE_RECOMMENDATIONS),
       watched_hash: 'expired-hash',
       expires_at: '2026-04-01T00:00:00.000Z',
     }
@@ -253,12 +246,12 @@ describe('/api/recommend', () => {
       statusMessage: 'Gemini is temporarily unavailable due to high demand.',
       retryable: true,
     })
-    expect(body.staleRecommendations).toEqual(STALE_RECOMMENDATIONS)
+    expect(body.staleRecommendations).toEqual(recommendationIds(STALE_RECOMMENDATIONS))
   })
 
   it('returns stale recommendations with non-retryable metadata for 429 failures', async () => {
     supabaseState.cachedRow = {
-      recommendations: cloneRecommendations(STALE_RECOMMENDATIONS),
+      tmdb_ids: recommendationIds(STALE_RECOMMENDATIONS),
       watched_hash: 'expired-hash',
       expires_at: '2026-04-01T00:00:00.000Z',
     }
@@ -278,12 +271,12 @@ describe('/api/recommend', () => {
       statusMessage: 'Daily recommendation limit reached. Please try again tomorrow.',
       retryable: false,
     })
-    expect(body.staleRecommendations).toEqual(STALE_RECOMMENDATIONS)
+    expect(body.staleRecommendations).toEqual(recommendationIds(STALE_RECOMMENDATIONS))
   })
 
   it('returns fallback metadata when regeneration results in too few valid recommendations', async () => {
     supabaseState.cachedRow = {
-      recommendations: cloneRecommendations(STALE_RECOMMENDATIONS),
+      tmdb_ids: recommendationIds(STALE_RECOMMENDATIONS),
       watched_hash: 'expired-hash',
       expires_at: '2026-04-01T00:00:00.000Z',
     }
@@ -301,7 +294,7 @@ describe('/api/recommend', () => {
       statusMessage: 'Recommendation generation returned too few valid TMDB matches.',
       retryable: false,
     })
-    expect(body.staleRecommendations).toEqual(STALE_RECOMMENDATIONS)
+    expect(body.staleRecommendations).toEqual(recommendationIds(STALE_RECOMMENDATIONS))
   })
 
   it('preserves the original error when regeneration fails without stored fallback', async () => {

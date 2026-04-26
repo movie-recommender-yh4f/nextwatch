@@ -3,6 +3,7 @@ import {
   fetchWatchedMovies,
   getRecommendationsFromGemini,
   fetchMyListMovies,
+  hasValidTmdbId,
 } from '../../utils/recommendations'
 
 const MAX_WATCHED_FOR_PROMPT = 50
@@ -56,5 +57,5 @@ export default defineEventHandler(async (event) => {
     event
   )
 
-  return { recommendations }
+  return { recommendations: recommendations.filter(hasValidTmdbId).map((movie) => movie.tmdbId) }
 })

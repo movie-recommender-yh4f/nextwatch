@@ -2,8 +2,9 @@ import { SchemaType } from '@google/generative-ai'
 import type { Schema } from '@google/generative-ai'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
-export const WATCHED_MOVIES_TABLE = 'watched_movies'
-export const MY_LIST_TABLE = 'my_list_movies'
+export const WATCHED_MOVIES_TABLE = 'user_watched_movies'
+export const MY_LIST_TABLE = 'user_my_list'
+const MOVIES_TABLE = 'movies'
 export const MIN_RECOMMENDATIONS_TO_CACHE = 5
 const MAX_WATCHED_FOR_PROMPT = 100
 const MAX_MY_LIST_FOR_PROMPT = 100
@@ -58,6 +59,16 @@ export interface RecommendationWithId extends Recommendation {
   tmdbId: number | null
 }
 
+interface MoviePromptRow {
+  tmdb_id: number
+  title: string
+  release_date: string
+}
+
+interface RecommendationMovieRow extends MoviePromptRow {
+  original_title: string
+}
+
 export function hasValidTmdbId(
   recommendation: RecommendationWithId
 ): recommendation is RecommendationWithId & { tmdbId: number } {
@@ -110,22 +121,96 @@ function pickBestMatchId(results: MovieSearchResult[], searchCandidates: string[
   return firstResult.tmdb_id
 }
 
+function parseYear(releaseDate: string): number {
+  return parseInt(releaseDate.split('-')[0] || '0', 10)
+}
+
+async function fetchMovieRowsByIds<T extends MoviePromptRow>(
+  supabase: SupabaseClient,
+  tmdbIds: number[],
+  columns: string
+): Promise<T[]> {
+  if (tmdbIds.length === 0) {
+    return []
+  }
+
+  const { data, error } = await supabase.from(MOVIES_TABLE).select(columns).in('tmdb_id', tmdbIds)
+
+  if (error) {
+    throw createError({ statusCode: 500, statusMessage: error.message })
+  }
+
+  return (data ?? []) as unknown as T[]
+}
+
+async function hydratePromptMovies(
+  supabase: SupabaseClient,
+  tmdbIds: number[]
+): Promise<WatchedMovieRecord[]> {
+  const rows = await fetchMovieRowsByIds<MoviePromptRow>(
+    supabase,
+    tmdbIds,
+    'tmdb_id, title, release_date'
+  )
+  const rowById = new Map(rows.map((row) => [row.tmdb_id, row]))
+
+  return tmdbIds.flatMap((tmdbId) => {
+    const row = rowById.get(tmdbId)
+
+    if (!row || row.title.trim().length === 0) {
+      return []
+    }
+
+    return [
+      {
+        tmdbId,
+        title: row.title,
+        year: parseYear(row.release_date),
+      },
+    ]
+  })
+}
+
+export async function hydrateRecommendationsByTmdbIds(
+  supabase: SupabaseClient,
+  tmdbIds: number[]
+): Promise<RecommendationWithId[]> {
+  const rows = await fetchMovieRowsByIds<RecommendationMovieRow>(
+    supabase,
+    tmdbIds,
+    'tmdb_id, title, original_title, release_date'
+  )
+  const rowById = new Map(rows.map((row) => [row.tmdb_id, row]))
+
+  return tmdbIds.map((tmdbId) => {
+    const row = rowById.get(tmdbId)
+    const title = row?.title ?? ''
+    const originalTitle = row?.original_title || title
+
+    return {
+      name: title,
+      originalName: originalTitle,
+      year: row ? parseYear(row.release_date) : 0,
+      tmdbId,
+    }
+  })
+}
+
 export async function fetchWatchedMovies(
   supabase: SupabaseClient,
   userId: string
 ): Promise<WatchedMovieRecord[]> {
   const { data, error } = await supabase
     .from(WATCHED_MOVIES_TABLE)
-    .select('movies')
+    .select('tmdb_id')
     .eq('user_id', userId)
-    .limit(1)
-    .maybeSingle()
 
   if (error) {
     throw createError({ statusCode: 500, statusMessage: error.message })
   }
 
-  return Array.isArray(data?.movies) ? (data.movies as WatchedMovieRecord[]) : []
+  const tmdbIds = ((data ?? []) as Array<{ tmdb_id: number }>).map((movie) => movie.tmdb_id)
+  return hydratePromptMovies(supabase, tmdbIds)
 }
 
 export async function fetchMyListMovies(
@@ -134,7 +219,7 @@ export async function fetchMyListMovies(
 ): Promise<WatchedMovieRecord[]> {
   const { data, error } = await supabase
     .from(MY_LIST_TABLE)
-    .select('movies')
+    .select('tmdb_ids')
     .eq('user_id', userId)
     .limit(1)
     .maybeSingle()
@@ -143,7 +228,8 @@ export async function fetchMyListMovies(
     throw createError({ statusCode: 500, statusMessage: error.message })
   }
 
-  return Array.isArray(data?.movies) ? (data.movies as WatchedMovieRecord[]) : []
+  const tmdbIds = Array.isArray(data?.tmdb_ids) ? (data.tmdb_ids as number[]) : []
+  return hydratePromptMovies(supabase, tmdbIds)
 }
 
 export function buildUserMessage(

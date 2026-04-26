@@ -208,8 +208,24 @@ const detailsRequestId = ref(0)
 const retrySecondsLeft = ref(0)
 let retryTimerHandle = null
 
-function cloneRecommendations(recommendations) {
-  return recommendations.map((recommendation) => ({ ...recommendation }))
+function toRecommendationItems(recommendations) {
+  return recommendations.flatMap((recommendation) => {
+    if (typeof recommendation === 'number' && Number.isInteger(recommendation) && recommendation > 0) {
+      return [{ tmdbId: recommendation }]
+    }
+
+    if (
+      recommendation &&
+      typeof recommendation === 'object' &&
+      typeof recommendation.tmdbId === 'number' &&
+      Number.isInteger(recommendation.tmdbId) &&
+      recommendation.tmdbId > 0
+    ) {
+      return [{ tmdbId: recommendation.tmdbId }]
+    }
+
+    return []
+  })
 }
 
 function clearRetryCooldown() {
@@ -264,7 +280,7 @@ function createRecommendationFailure({
     retryable,
     staleRecommendations:
       Array.isArray(staleRecommendations) && staleRecommendations.length > 0
-        ? cloneRecommendations(staleRecommendations)
+        ? toRecommendationItems(staleRecommendations)
         : null,
     staleApplied,
   }
@@ -292,9 +308,9 @@ function setRecommendationFailure(failure) {
 }
 
 function applyRecommendations(recommendations) {
-  const cloned = cloneRecommendations(recommendations)
-  movies.value = cloned
-  originalMovies.value = [...cloned]
+  const recommendationItems = toRecommendationItems(recommendations)
+  movies.value = recommendationItems
+  originalMovies.value = recommendationItems.map((recommendation) => ({ ...recommendation }))
   currentMovieDetails.value = null
   hasSuccessfulRecommendationLoad.value = true
 }
@@ -338,8 +354,8 @@ const currentMovieFormatted = computed(() => {
 
   return {
     id: details?.id ?? movie.tmdbId ?? null,
-    title: details?.title ?? movie.name,
-    year: details?.year ?? movie.year,
+    title: details?.title ?? '',
+    year: details?.year ?? 0,
     image: details?.poster ?? '',
     genre: details?.genres?.join(', ') ?? 'Unknown Genre',
     director: details?.directors?.[0] ?? null,
@@ -443,7 +459,7 @@ const fetchRecommendations = async (mode = FETCH_MODE.DEFAULT) => {
     }
 
     if (!Array.isArray(response.recommendations)) {
-      throw new Error('Recommendations response was missing a recommendation list.')
+    throw new Error('Recommendations response was missing a recommendation list.')
     }
 
     clearRetryCooldown()
@@ -465,10 +481,7 @@ const loadPreviousRecommendations = () => {
   if (!Array.isArray(staleRecommendations) || staleRecommendations.length === 0) return
 
   applyRecommendations(staleRecommendations)
-  recommendationFailure.value = {
-    ...recommendationFailure.value,
-    staleApplied: true,
-  }
+  recommendationFailure.value = null
 }
 
 const resetMovies = () => {
@@ -508,8 +521,8 @@ const handleDislike = () => {
 function buildMovieToSave(rawMovie, details) {
   return {
     id: details?.id ?? rawMovie.tmdbId ?? 0,
-    title: details?.title ?? rawMovie.name,
-    year: details?.year ?? rawMovie.year,
+    title: details?.title ?? '',
+    year: details?.year ?? 0,
     poster: details?.poster ?? '',
   }
 }
@@ -586,8 +599,6 @@ const handleUndo = async () => {
 
   movies.value.unshift({
     tmdbId: action.movie.id,
-    name: action.movie.title,
-    year: action.movie.year,
   })
 }
 

@@ -21,6 +21,8 @@ export default defineConfig({
               domEnvironment: 'happy-dom',
               overrides: {
                 runtimeConfig: {
+                  adminToken: 'test-admin-token',
+                  supabaseServiceRoleKey: 'test-service-role-key',
                   public: {
                     supabaseUrl: 'https://example.supabase.co',
                     supabaseKey: 'test-supabase-key',

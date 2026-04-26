@@ -51,14 +51,14 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  const recommendations = await getRecommendationsFromGemini(
+  const geminiResult = await getRecommendationsFromGemini(
     watchedMovies.slice(0, MAX_WATCHED_FOR_PROMPT),
     myListMovies.slice(0, MAX_WATCHED_FOR_PROMPT),
     user.id,
     event
   )
 
-  const validRecommendations = recommendations.filter(hasValidTmdbId)
+  const validRecommendations = geminiResult.recommendations.filter(hasValidTmdbId)
   const isDevelopmentMode = import.meta.dev || process.env.NODE_ENV !== NON_PRODUCTION_NODE_ENV
 
   return {

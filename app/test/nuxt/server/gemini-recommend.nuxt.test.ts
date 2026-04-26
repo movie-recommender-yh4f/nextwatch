@@ -81,10 +81,15 @@ describe('/api/gemini/recommend', () => {
     })
     fetchWatchedMoviesMock.mockResolvedValue([{ tmdbId: 1, title: 'Alien', year: 1979 }])
     fetchMyListMoviesMock.mockResolvedValue([])
-    getRecommendationsFromGeminiMock.mockResolvedValue([
-      { name: 'Stalker', originalName: 'Stalker', year: 1979, tmdbId: 1398 },
-      { name: 'Invalid', originalName: 'Invalid', year: 2000, tmdbId: null },
-    ])
+    getRecommendationsFromGeminiMock.mockResolvedValue({
+      recommendations: [
+        { name: 'Stalker', originalName: 'Stalker', year: 1979, tmdbId: 1398 },
+        { name: 'Invalid', originalName: 'Invalid', year: 2000, tmdbId: null },
+      ],
+      tmdbFallbackCount: 0,
+      systemPrompt: '',
+      userMessage: '',
+    })
   })
 
   afterEach(() => {

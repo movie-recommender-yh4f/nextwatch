@@ -114,9 +114,12 @@ describe('appendTmdbIds', () => {
       { name: 'Suspiria', originalName: 'Suspiria', year: 1977 },
     ])
 
-    expect(results).toEqual([
-      { name: 'Suspiria', originalName: 'Suspiria', year: 1977, tmdbId: 11907 },
-    ])
+    expect(results).toEqual({
+      recommendations: [
+        { name: 'Suspiria', originalName: 'Suspiria', year: 1977, tmdbId: 11907 },
+      ],
+      tmdbFallbackCount: 0,
+    })
   })
 
   it('falls back to the top result when no cached year matches', async () => {
@@ -154,9 +157,12 @@ describe('appendTmdbIds', () => {
       { name: 'Suspiria', originalName: 'Suspiria', year: 2024 },
     ])
 
-    expect(results).toEqual([
-      { name: 'Suspiria', originalName: 'Suspiria', year: 2024, tmdbId: 11906 },
-    ])
+    expect(results).toEqual({
+      recommendations: [
+        { name: 'Suspiria', originalName: 'Suspiria', year: 2024, tmdbId: 11906 },
+      ],
+      tmdbFallbackCount: 0,
+    })
   })
 
   it('returns null when Supabase search does not find a match and no event is provided', async () => {
@@ -175,9 +181,10 @@ describe('appendTmdbIds', () => {
       { name: 'Stalker', originalName: 'Stalker', year: 1979 },
     ])
 
-    expect(results).toEqual([
-      { name: 'Stalker', originalName: 'Stalker', year: 1979, tmdbId: null },
-    ])
+    expect(results).toEqual({
+      recommendations: [{ name: 'Stalker', originalName: 'Stalker', year: 1979, tmdbId: null }],
+      tmdbFallbackCount: 0,
+    })
   })
 
   it('falls back to TMDB search with year when Supabase search misses a movie', async () => {
@@ -207,9 +214,17 @@ describe('appendTmdbIds', () => {
       {} as import('h3').H3Event
     )
 
-    expect(results).toEqual([
-      { name: 'Edge of Tomorrow', originalName: 'Edge of Tomorrow', year: 2014, tmdbId: 137113 },
-    ])
+    expect(results).toEqual({
+      recommendations: [
+        {
+          name: 'Edge of Tomorrow',
+          originalName: 'Edge of Tomorrow',
+          year: 2014,
+          tmdbId: 137113,
+        },
+      ],
+      tmdbFallbackCount: 1,
+    })
     expect(fetchTmdbMock).toHaveBeenCalledTimes(1)
   })
 
@@ -226,9 +241,10 @@ describe('appendTmdbIds', () => {
       {} as import('h3').H3Event
     )
 
-    expect(results).toEqual([
-      { name: 'Stalker', originalName: 'Stalker', year: 1979, tmdbId: null },
-    ])
+    expect(results).toEqual({
+      recommendations: [{ name: 'Stalker', originalName: 'Stalker', year: 1979, tmdbId: null }],
+      tmdbFallbackCount: 1,
+    })
     expect(fetchTmdbMock).toHaveBeenCalledTimes(1)
   })
 })

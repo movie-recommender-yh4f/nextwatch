@@ -218,9 +218,12 @@ describe('/api/recommend', () => {
     })
     fetchWatchedMoviesMock.mockResolvedValue(cloneWatchedMovies(WATCHED_MOVIES))
     fetchMyListMoviesMock.mockResolvedValue(cloneWatchedMovies(MY_LIST_MOVIES))
-    getRecommendationsFromGeminiMock.mockResolvedValue(
-      cloneRecommendations(GENERATED_RECOMMENDATIONS)
-    )
+    getRecommendationsFromGeminiMock.mockResolvedValue({
+      recommendations: cloneRecommendations(GENERATED_RECOMMENDATIONS),
+      tmdbFallbackCount: 0,
+      systemPrompt: '',
+      userMessage: '',
+    })
   })
 
   afterEach(() => {
@@ -282,14 +285,19 @@ describe('/api/recommend', () => {
   })
 
   it('deduplicates generated recommendations before returning and caching them', async () => {
-    getRecommendationsFromGeminiMock.mockResolvedValue([
-      GENERATED_RECOMMENDATIONS[0]!,
-      GENERATED_RECOMMENDATIONS[0]!,
-      GENERATED_RECOMMENDATIONS[1]!,
-      GENERATED_RECOMMENDATIONS[2]!,
-      GENERATED_RECOMMENDATIONS[3]!,
-      GENERATED_RECOMMENDATIONS[4]!,
-    ])
+    getRecommendationsFromGeminiMock.mockResolvedValue({
+      recommendations: [
+        GENERATED_RECOMMENDATIONS[0]!,
+        GENERATED_RECOMMENDATIONS[0]!,
+        GENERATED_RECOMMENDATIONS[1]!,
+        GENERATED_RECOMMENDATIONS[2]!,
+        GENERATED_RECOMMENDATIONS[3]!,
+        GENERATED_RECOMMENDATIONS[4]!,
+      ],
+      tmdbFallbackCount: 0,
+      systemPrompt: '',
+      userMessage: '',
+    })
 
     const response = await fetch(`${baseUrl}/api/recommend?refresh=true`)
     const body = await readJson(response)
@@ -308,15 +316,20 @@ describe('/api/recommend', () => {
   })
 
   it('returns unmatched recommendations from Gemini when TMDB resolution fails', async () => {
-    getRecommendationsFromGeminiMock.mockResolvedValue([
-      ...cloneRecommendations(GENERATED_RECOMMENDATIONS),
-      {
-        name: 'Unknown Festival Cut',
-        originalName: 'Unknown Festival Cut',
-        year: 2024,
-        tmdbId: null,
-      },
-    ])
+    getRecommendationsFromGeminiMock.mockResolvedValue({
+      recommendations: [
+        ...cloneRecommendations(GENERATED_RECOMMENDATIONS),
+        {
+          name: 'Unknown Festival Cut',
+          originalName: 'Unknown Festival Cut',
+          year: 2024,
+          tmdbId: null,
+        },
+      ],
+      tmdbFallbackCount: 0,
+      systemPrompt: '',
+      userMessage: '',
+    })
 
     const response = await fetch(`${baseUrl}/api/recommend?refresh=true`)
     const body = await readJson(response)
@@ -347,7 +360,12 @@ describe('/api/recommend', () => {
     supabaseState.movieRows = supabaseState.movieRows.map((row) =>
       row.tmdb_id === lowPopularityId ? { ...row, popularity: 1 } : row
     )
-    getRecommendationsFromGeminiMock.mockResolvedValue(extendedRecommendations)
+    getRecommendationsFromGeminiMock.mockResolvedValue({
+      recommendations: extendedRecommendations,
+      tmdbFallbackCount: 0,
+      systemPrompt: '',
+      userMessage: '',
+    })
 
     const response = await fetch(`${baseUrl}/api/recommend?refresh=true`)
     const body = await readJson(response)
@@ -431,9 +449,12 @@ describe('/api/recommend', () => {
       watched_hash: 'expired-hash',
       expires_at: '2026-04-01T00:00:00.000Z',
     }
-    getRecommendationsFromGeminiMock.mockResolvedValue(
-      cloneRecommendations(INSUFFICIENT_VALID_RECOMMENDATIONS)
-    )
+    getRecommendationsFromGeminiMock.mockResolvedValue({
+      recommendations: cloneRecommendations(INSUFFICIENT_VALID_RECOMMENDATIONS),
+      tmdbFallbackCount: 0,
+      systemPrompt: '',
+      userMessage: '',
+    })
 
     const response = await fetch(`${baseUrl}/api/recommend?refresh=true`)
     const body = await readJson(response)

@@ -1,93 +1,134 @@
-import type { ResultSet } from '@libsql/client'
+import { createClient } from '@supabase/supabase-js'
+import type { SupabaseClient } from '@supabase/supabase-js'
 
 const MAX_RESULTS = 20
 const MIN_QUERY_LENGTH = 2
+const MOVIES_TABLE = 'movies'
+const SEARCH_COLUMNS = 'tmdb_id, original_title, popularity, release_date'
+const TSQUERY_SUFFIX = ':*'
+const TSQUERY_SEPARATOR = ' & '
 
-const SEARCH_SQL = `SELECT m.tmdb_id,
-                 m.original_title,
-                 m.popularity,
-                 bm25(movies_fts) AS relevance_score,
-                 CASE
-                   WHEN LOWER(m.original_title) = LOWER(?) THEN 0
-                   WHEN LOWER(m.original_title) LIKE LOWER(?) || '%' THEN 1
-                   WHEN LOWER(m.original_title) LIKE '%' || LOWER(?) || '%' THEN 2
-                   ELSE 3
-                 END AS title_match_bucket
-          FROM movies_fts f
-          JOIN movies_index m ON m.tmdb_id = f.rowid
-          WHERE movies_fts MATCH ?
-          ORDER BY title_match_bucket ASC, relevance_score ASC
-          LIMIT ?`
+interface MovieSearchRow {
+  tmdb_id: number
+  original_title: string
+  popularity: number
+  release_date: string
+}
 
 export interface MovieSearchResult {
   tmdb_id: number
   original_title: string
   popularity: number
+  year: number
 }
 
-function buildFtsQuery(normalizedQuery: string): string {
-  const tokens = normalizedQuery
-    .split(/\s+/)
-    .map((token) => token.replace(/"/g, '""'))
-    .filter((token) => token.length > 0)
+interface SearchCandidate {
+  query: string
+  year?: number
+}
 
-  return tokens
-    .map((token, index) => {
-      const needsQuotes = /[^\p{L}\p{N}_]/u.test(token)
-      const wildcardSuffix = index === tokens.length - 1 ? '*' : ''
-      return needsQuotes ? `"${token}"${wildcardSuffix}` : `${token}${wildcardSuffix}`
+function createSearchSupabaseClient(): SupabaseClient {
+  const config = useRuntimeConfig()
+  const { supabaseUrl } = config.public
+  const serviceRoleKey = config.supabaseServiceRoleKey
+
+  if (!supabaseUrl || !serviceRoleKey) {
+    throw createError({
+      statusCode: 500,
+      statusMessage: 'Supabase service role is not configured.',
     })
-    .join(' ')
-}
-
-function buildSearchStatement(query: string): { sql: string; args: (string | number)[] } | null {
-  const normalizedQuery = query.trim()
-  if (normalizedQuery.length < MIN_QUERY_LENGTH) return null
-
-  return {
-    sql: SEARCH_SQL,
-    args: [
-      normalizedQuery,
-      normalizedQuery,
-      normalizedQuery,
-      buildFtsQuery(normalizedQuery),
-      MAX_RESULTS,
-    ],
   }
+
+  return createClient(supabaseUrl, serviceRoleKey, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+    },
+  })
 }
 
-function mapRows(resultSet: ResultSet): MovieSearchResult[] {
-  return resultSet.rows.map((row) => ({
-    tmdb_id: row[0] as number,
-    original_title: row[1] as string,
-    popularity: row[2] as number,
+function parseYear(releaseDate: string): number {
+  return Number.parseInt(releaseDate.split('-')[0] || '0', 10)
+}
+
+function buildTsQuery(query: string): string | null {
+  const tokens = query.trim().toLowerCase().match(/[\p{L}\p{N}]+/gu) ?? []
+  if (tokens.length === 0) {
+    return null
+  }
+
+  return tokens.map((token) => `${token}${TSQUERY_SUFFIX}`).join(TSQUERY_SEPARATOR)
+}
+
+async function executeSearch(
+  supabase: SupabaseClient,
+  query: string,
+  year?: number
+): Promise<MovieSearchResult[]> {
+  if (query.trim().length < MIN_QUERY_LENGTH) {
+    return []
+  }
+
+  const tsQuery = buildTsQuery(query)
+  if (!tsQuery) {
+    return []
+  }
+
+  let builder = supabase
+    .from(MOVIES_TABLE)
+    .select(SEARCH_COLUMNS)
+    .filter('fts_vector', 'fts', tsQuery)
+    .order('popularity', { ascending: false })
+
+  if (year) {
+    builder = builder
+      .gte('release_date', `${year}-01-01`)
+      .lte('release_date', `${year}-12-31`)
+  }
+
+  const { data, error } = await builder.limit(MAX_RESULTS)
+  if (error) {
+    throw createError({ statusCode: 500, statusMessage: error.message })
+  }
+
+  const rows = (data ?? []) as MovieSearchRow[]
+  if (rows.length === 0 && year) {
+    return executeSearch(supabase, query)
+  }
+
+  return rows.map((row) => ({
+    tmdb_id: row.tmdb_id,
+    original_title: row.original_title,
+    popularity: row.popularity,
+    year: parseYear(row.release_date),
   }))
 }
 
-export async function searchMovies(query: string): Promise<MovieSearchResult[]> {
-  const statement = buildSearchStatement(query)
-  if (!statement) return []
-
-  const db = useDb()
-  const result = await db.execute(statement)
-  return mapRows(result)
+export async function searchMovies(query: string, year?: number): Promise<MovieSearchResult[]> {
+  return executeSearch(createSearchSupabaseClient(), query, year)
 }
 
 export async function searchMoviesBatch(
-  candidates: string[]
+  candidates: SearchCandidate[]
 ): Promise<Map<string, MovieSearchResult[]>> {
-  const unique = [
-    ...new Set(candidates.map((c) => c.trim()).filter((c) => c.length >= MIN_QUERY_LENGTH)),
+  const uniqueCandidates = [
+    ...new Map(
+      candidates
+        .filter(({ query }) => query.trim().length >= MIN_QUERY_LENGTH)
+        .map((candidate) => [`${candidate.query}::${candidate.year ?? ''}`, candidate] as const)
+    ).values(),
   ]
-  if (unique.length === 0) return new Map()
 
-  const statements = unique.map((q) => buildSearchStatement(q)!)
-  const db = useDb()
-  const resultSets = await db.batch(statements)
-
-  const resultMap = new Map<string, MovieSearchResult[]>()
-  for (let i = 0; i < unique.length; i++) {
-    resultMap.set(unique[i]!, mapRows(resultSets[i]!))
+  if (uniqueCandidates.length === 0) {
+    return new Map()
   }
-  return resultMap
+
+  const supabase = createSearchSupabaseClient()
+  const searchResults = await Promise.all(
+    uniqueCandidates.map(
+      async ({ query, year }) => [`${query}::${year ?? ''}`, await executeSearch(supabase, query, year)] as const
+    )
+  )
+
+  return new Map(searchResults)
 }

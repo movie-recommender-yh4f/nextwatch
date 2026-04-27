@@ -3,9 +3,11 @@ import {
   fetchWatchedMovies,
   getRecommendationsFromGemini,
   fetchMyListMovies,
+  hasValidTmdbId,
 } from '../../utils/recommendations'
 
 const MAX_WATCHED_FOR_PROMPT = 50
+const NON_PRODUCTION_NODE_ENV = 'production'
 
 interface RecommendBody {
   movies?: Array<{ id: number; title: string; year: number }>
@@ -49,12 +51,23 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  const recommendations = await getRecommendationsFromGemini(
+  const geminiResult = await getRecommendationsFromGemini(
     watchedMovies.slice(0, MAX_WATCHED_FOR_PROMPT),
     myListMovies.slice(0, MAX_WATCHED_FOR_PROMPT),
     user.id,
     event
   )
 
-  return { recommendations }
+  const validRecommendations = geminiResult.recommendations.filter(hasValidTmdbId)
+  const isDevelopmentMode = import.meta.dev || process.env.NODE_ENV !== NON_PRODUCTION_NODE_ENV
+
+  return {
+    recommendations: isDevelopmentMode
+      ? validRecommendations.map(({ tmdbId, originalName, year }) => ({
+          tmdbId,
+          originalName,
+          year,
+        }))
+      : validRecommendations.map((movie) => movie.tmdbId),
+  }
 })

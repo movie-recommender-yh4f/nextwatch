@@ -12,7 +12,7 @@ export interface WatchedMovieFixture {
 }
 
 export interface RecommendationResponseFixture {
-  recommendations: RecommendationFixture[] | null
+  recommendations: number[] | null
   cached: boolean
   stale: false
   regenerationError: {
@@ -20,7 +20,7 @@ export interface RecommendationResponseFixture {
     statusMessage: string
     retryable: boolean
   } | null
-  staleRecommendations: RecommendationFixture[] | null
+  staleRecommendations: number[] | null
 }
 
 export const TEST_AUTH_TOKEN = 'test-access-token'
@@ -75,16 +75,22 @@ export function cloneRecommendations(
   return recommendations.map((recommendation) => ({ ...recommendation }))
 }
 
+export function recommendationIds(recommendations: Array<{ tmdbId: number | null }>): number[] {
+  return recommendations.flatMap((recommendation) =>
+    recommendation.tmdbId === null ? [] : [recommendation.tmdbId]
+  )
+}
+
 export function cloneWatchedMovies(movies: WatchedMovieFixture[]): WatchedMovieFixture[] {
   return movies.map((movie) => ({ ...movie }))
 }
 
 export function createSuccessResponse(
-  recommendations: RecommendationFixture[],
+  recommendations: number[],
   cached: boolean
 ): RecommendationResponseFixture {
   return {
-    recommendations: cloneRecommendations(recommendations),
+    recommendations: [...recommendations],
     cached,
     stale: false,
     regenerationError: null,
@@ -96,7 +102,7 @@ export function createFallbackResponse(
   statusCode: number,
   statusMessage: string,
   retryable: boolean,
-  staleRecommendations: RecommendationFixture[]
+  staleRecommendations: number[]
 ): RecommendationResponseFixture {
   return {
     recommendations: null,
@@ -107,6 +113,6 @@ export function createFallbackResponse(
       statusMessage,
       retryable,
     },
-    staleRecommendations: cloneRecommendations(staleRecommendations),
+    staleRecommendations: [...staleRecommendations],
   }
 }

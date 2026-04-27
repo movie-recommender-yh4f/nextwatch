@@ -17,13 +17,13 @@
           v-model="newName"
           type="text"
           class="w-full border-b-2 border-rose-500 bg-transparent px-2 py-1 text-xl font-bold text-gray-900 dark:text-white text-center focus:outline-none"
-          @keyup.enter="saveName"
           placeholder="Enter new name..."
+          @keyup.enter="saveName"
         />
         <button
-          @click="saveName"
           :disabled="isSavingName"
           class="text-green-500 hover:text-green-600 p-1 transition-colors"
+          @click="saveName"
         >
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
@@ -34,7 +34,7 @@
             ></path>
           </svg>
         </button>
-        <button @click="cancelEdit" class="text-gray-400 hover:text-rose-500 p-1 transition-colors">
+        <button class="text-gray-400 hover:text-rose-500 p-1 transition-colors" @click="cancelEdit">
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
               stroke-linecap="round"
@@ -51,8 +51,8 @@
           {{ user?.user_metadata?.username || user?.user_metadata?.full_name || 'User' }}
         </h2>
         <button
-          @click="startEditing"
           class="text-gray-400 hover:text-rose-500 transition-colors p-1 flex-shrink-0"
+          @click="startEditing"
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
@@ -72,8 +72,8 @@
   </div>
 
   <button
-    @click="handleLogout"
     class="w-full max-w-xs bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 rounded-xl py-3 px-6 font-semibold hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm mb-10"
+    @click="handleLogout"
   >
     Log Out
   </button>

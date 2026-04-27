@@ -44,8 +44,8 @@
           v-for="(movie, index) in movies"
           :key="movie.tmdbId"
           :data-index="index"
-          @click="$emit('open-details', movie)"
           class="aspect-[2/3] rounded-xl overflow-hidden bg-gray-200 dark:bg-gray-700 shadow-sm relative group cursor-pointer transition-transform duration-200 hover:scale-[1.03]"
+          @click="$emit('open-details', movie)"
         >
           <img
             :src="posterUrl(movie.posterPath)"
@@ -57,9 +57,9 @@
           >
             <div class="flex justify-end">
               <button
-                @click.stop="$emit('remove', movie.tmdbId)"
                 class="bg-red-500/80 hover:bg-red-600 text-white rounded-full p-1.5 transition-colors"
                 title="Remove from watched"
+                @click.stop="$emit('remove', movie.tmdbId)"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
                   <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />

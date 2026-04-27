@@ -3,8 +3,8 @@
     <div class="flex justify-between items-center px-4 py-3 w-full max-w-md mx-auto">
       <span class="text-xl font-bold text-gray-800 dark:text-white tracking-tight">recc</span>
       <button
-        @click="toggleDark()"
         class="theme-toggle btn-press text-gray-400 dark:text-gray-500 transition-colors hover:text-rose-400"
+        @click="toggleDark()"
       >
         <ClientOnly>
         <Transition name="icon-spin" mode="out-in">

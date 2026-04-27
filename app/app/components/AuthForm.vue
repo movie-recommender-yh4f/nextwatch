@@ -25,8 +25,8 @@
       <Transition name="auth-switch" mode="out-in">
         <form
           :key="authView"
-          @submit.prevent="submitAuth"
           class="auth-field-stagger flex flex-col gap-4"
+          @submit.prevent="submitAuth"
         >
           <input
             v-if="authView === 'register'"
@@ -88,16 +88,16 @@
       <div class="mt-4 flex flex-col items-center gap-3 text-sm">
         <template v-if="authView === 'login'">
           <button
-            @click="switchView('forgot')"
             class="text-gray-500 hover:text-rose-500 transition-colors"
+            @click="switchView('forgot')"
           >
             Forgot password?
           </button>
           <div class="text-gray-400">
             Don't have an account?
             <button
-              @click="switchView('register')"
               class="text-rose-500 font-semibold hover:underline"
+              @click="switchView('register')"
             >
               Register
             </button>
@@ -108,8 +108,8 @@
           <div class="text-gray-400">
             Already have an account?
             <button
-              @click="switchView('login')"
               class="text-rose-500 font-semibold hover:underline"
+              @click="switchView('login')"
             >
               Log In
             </button>
@@ -118,8 +118,8 @@
 
         <template v-else>
           <button
-            @click="switchView('login')"
             class="text-gray-500 hover:text-rose-500 transition-colors flex items-center gap-1"
+            @click="switchView('login')"
           >
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
@@ -142,9 +142,9 @@
 
       <button
         v-if="authView !== 'forgot'"
-        @click="handleGoogleSignIn"
         :disabled="isLoading || isGoogleLoading"
         class="btn-press w-full flex items-center justify-center gap-3 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-200 py-3 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-600 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:cursor-not-allowed transition-colors font-medium h-12 shadow-sm"
+        @click="handleGoogleSignIn"
       >
         <svg v-if="!isGoogleLoading" class="w-5 h-5" viewBox="0 0 24 24">
           <path

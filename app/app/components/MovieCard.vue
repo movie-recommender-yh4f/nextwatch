@@ -24,9 +24,11 @@
           title="Already watched"
         >
           <svg class="w-4 h-4 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            <path
+stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
               d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            <path
+stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
               d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
           </svg>
         </div>
@@ -36,7 +38,8 @@
           title="In My List"
         >
           <svg class="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            <path
+stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
               d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
           </svg>
         </div>
@@ -78,8 +81,8 @@
 
     <div class="flex justify-center items-center gap-4 sm:gap-6 shrink-0">
       <button
-        @click.stop="$emit('dislike', movie)"
         class="btn-press w-14 h-14 rounded-full bg-white dark:bg-gray-800 flex items-center justify-center text-gray-700 dark:text-gray-200 hover:text-red-500 dark:hover:text-red-400 transition-all border border-gray-200 dark:border-gray-700 shadow-md"
+        @click.stop="$emit('dislike', movie)"
       >
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path
@@ -92,11 +95,11 @@
       </button>
 
       <button
-        @click.stop="$emit('watched', movie)"
         class="btn-press w-16 h-16 rounded-full flex items-center justify-center text-white transition-all shadow-xl"
         :class="isWatched
           ? 'bg-rose-300 dark:bg-rose-700'
           : 'bg-rose-500 hover:bg-rose-600 hover:scale-105'"
+        @click.stop="$emit('watched', movie)"
       >
         <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path
@@ -115,11 +118,11 @@
       </button>
 
       <button
-        @click.stop="$emit('to-watch', movie)"
         class="btn-press w-14 h-14 rounded-full flex items-center justify-center transition-all border shadow-md"
         :class="isInMyList
           ? 'bg-green-500 dark:bg-green-600 border-green-500 dark:border-green-600 text-white'
           : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:text-green-500 dark:hover:text-green-400'"
+        @click.stop="$emit('to-watch', movie)"
       >
         <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path
@@ -140,10 +143,10 @@
       </button>
 
       <button
-        @click.stop="$emit('refresh')"
         aria-label="Refresh list"
         title="Refresh list"
         class="btn-press w-10 h-10 rounded-full bg-white dark:bg-gray-800 flex items-center justify-center text-gray-700 dark:text-gray-200 hover:text-rose-500 dark:hover:text-rose-400 transition-all border border-gray-200 dark:border-gray-700 shadow-md"
+        @click.stop="$emit('refresh')"
       >
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path

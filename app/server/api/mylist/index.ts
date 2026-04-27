@@ -19,10 +19,12 @@ interface MovieRow {
 }
 
 const USER_MY_LIST_TABLE = 'user_my_list'
+const USER_WATCHED_MOVIES_TABLE = 'user_watched_movies'
 const MOVIES_TABLE = 'movies'
 const APPEND_MY_LIST_RPC = 'append_my_list'
 const REMOVE_MY_LIST_RPC = 'remove_my_list'
 const SUPPORTED_METHODS = ['GET', 'POST', 'DELETE']
+const ALREADY_WATCHED_STATUS = 'Movie is already in watched list'
 
 function parseYear(releaseDate: string): number {
   return parseInt(releaseDate.split('-')[0] || '0', 10)
@@ -126,6 +128,26 @@ async function callMyListRpc(
   }
 }
 
+async function ensureMovieIsNotWatched(
+  supabase: Awaited<ReturnType<typeof getAuthorizedUser>>['supabase'],
+  userId: string,
+  tmdbId: number
+) {
+  const { data, error } = await supabase
+    .from(USER_WATCHED_MOVIES_TABLE)
+    .select('tmdb_id')
+    .eq('user_id', userId)
+    .eq('tmdb_id', tmdbId)
+
+  if (error) {
+    throw createError({ statusCode: 500, statusMessage: error.message })
+  }
+
+  if ((data ?? []).length > 0) {
+    throw createError({ statusCode: 409, statusMessage: ALREADY_WATCHED_STATUS })
+  }
+}
+
 export default defineEventHandler(async (event) => {
   const method = event.method
   const { supabase, user } = await getAuthorizedUser(event)
@@ -152,6 +174,7 @@ export default defineEventHandler(async (event) => {
 
   if (method === 'POST') {
     const tmdbId = validateTmdbId(extractTmdbId(await readBody<unknown>(event)))
+    await ensureMovieIsNotWatched(supabase, user.id, tmdbId)
     await callMyListRpc(supabase, APPEND_MY_LIST_RPC, user.id, tmdbId)
 
     return {

@@ -10,10 +10,7 @@
         :alt="movie.title"
         class="w-full h-full object-cover"
       />
-      <div
-        v-else
-        class="w-full h-full flex items-center justify-center text-gray-400 text-xs"
-      >
+      <div v-else class="w-full h-full flex items-center justify-center text-gray-400 text-xs">
         No image
       </div>
 
@@ -31,7 +28,9 @@
 
     <div class="p-3 flex flex-col flex-1 justify-between">
       <div>
-        <h3 class="text-sm font-bold text-gray-900 dark:text-white line-clamp-1 mb-1">{{ movie.title }}</h3>
+        <h3 class="text-sm font-bold text-gray-900 dark:text-white line-clamp-1 mb-1">
+          {{ movie.title }}
+        </h3>
         <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">
           {{ movie.release_date ? movie.release_date.split('-')[0] : 'Unknown' }}
         </p>
@@ -40,9 +39,9 @@
       <div class="flex gap-2">
         <button
           v-if="isWatched"
-          @click.stop="$emit('remove', movie)"
           class="group flex-1 py-2 bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-red-500 hover:text-white transition-colors rounded-lg text-xs font-bold flex justify-center items-center gap-1"
           title="Remove from watched"
+          @click.stop="$emit('remove', movie)"
         >
           <svg
             class="w-4 h-4 text-green-500 group-hover:hidden"
@@ -75,8 +74,8 @@
         </button>
         <button
           v-else
-          @click.stop="$emit('add', movie)"
           class="flex-1 py-2 bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 hover:bg-rose-500 hover:text-white transition-colors rounded-lg text-xs font-bold flex justify-center items-center gap-1"
+          @click.stop="$emit('add', movie)"
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
@@ -89,12 +88,19 @@
           Watched
         </button>
         <button
-          @click.stop="$emit('toggle-mylist', movie)"
           class="py-2 px-2 rounded-lg transition-colors flex items-center justify-center"
-          :class="isInMyList
-            ? 'bg-rose-500 text-white hover:bg-rose-600'
-            : 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 hover:text-rose-500'"
-          :title="isInMyList ? 'Remove from My List' : 'Add to My List'"
+          :class="
+            isWatched
+              ? 'bg-gray-100 dark:bg-gray-700 text-gray-300 dark:text-gray-600 cursor-not-allowed'
+              : isInMyList
+                ? 'bg-rose-500 text-white hover:bg-rose-600'
+                : 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 hover:text-rose-500'
+          "
+          :title="
+            isWatched ? 'Already in watched' : isInMyList ? 'Remove from My List' : 'Add to My List'
+          "
+          :disabled="isWatched || isInMyList"
+          @click.stop="$emit('toggle-mylist', movie)"
         >
           <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
             <path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />

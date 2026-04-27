@@ -126,6 +126,7 @@
         <div class="w-full h-[65vh] relative mx-auto">
           <Transition name="card" mode="out-in">
             <MovieCard
+              v-if="currentMovieFormatted"
               :key="currentMovieFormatted?.id"
               :movie="currentMovieFormatted"
               :is-in-my-list="isInMyList"
@@ -152,8 +153,8 @@
           {{ undoAction.type === 'watched' ? 'marked as watched' : 'added to My List' }}
         </span>
         <button
-          @click="handleUndo"
           class="text-rose-500 hover:text-rose-600 dark:text-rose-400 dark:hover:text-rose-300 font-semibold text-sm whitespace-nowrap transition-colors"
+          @click="handleUndo"
         >
           Undo
         </button>

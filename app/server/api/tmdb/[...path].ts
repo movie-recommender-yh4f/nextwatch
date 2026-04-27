@@ -5,12 +5,12 @@ export default defineEventHandler(async (event) => {
   if (!path) {
     throw createError({
       statusCode: 400,
-      message: 'Path parameter is required',
+      statusMessage: 'Path parameter is required',
     })
   }
 
   const tmdbQuery = Object.fromEntries(
-    Object.entries(query).filter(([, v]) => v !== null),
+    Object.entries(query).filter(([, v]) => v !== null)
   ) as Record<string, string | string[] | number>
 
   return fetchTmdb(event, path, tmdbQuery)

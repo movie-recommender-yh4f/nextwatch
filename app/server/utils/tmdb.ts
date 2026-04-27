@@ -1,15 +1,75 @@
 import type { H3Event } from 'h3'
 import { createRateLimiter } from './ratelimit'
 
-const TMDB_API_URL = 'https://api.themoviedb.org/3'
+const TMDB_API_ORIGIN = 'https://api.themoviedb.org'
+const TMDB_API_URL = 'https://api.themoviedb.org/3/'
 const RATE_LIMIT_HEADER_LIMIT = 'X-RateLimit-Limit'
 const RATE_LIMIT_HEADER_REMAINING = 'X-RateLimit-Remaining'
 const RATE_LIMIT_HEADER_RESET = 'X-RateLimit-Reset'
 const TMDB_RATE_LIMIT_HEADER_LIMIT = 'X-TMDB-RateLimit-Limit'
 const TMDB_RATE_LIMIT_HEADER_REMAINING = 'X-TMDB-RateLimit-Remaining'
 const TMDB_RATE_LIMIT_HEADER_RESET = 'X-TMDB-RateLimit-Reset'
+const PROTOCOL_RELATIVE_PREFIX = '//'
+const ABSOLUTE_URL_PATTERN = /^[a-zA-Z][a-zA-Z\d+\-.]*:/
+const ALLOWED_TMDB_PATH_PREFIXES = ['movie/', 'search/', 'genre/'] as const
 
 type TmdbQuery = Record<string, string | string[] | number | undefined>
+
+function normalizeTmdbPath(path: string): string {
+  const normalizedPath = path.trim()
+
+  if (!normalizedPath) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'Path cannot be empty.',
+    })
+  }
+
+  // make sure path is realtive and not absolute URL
+  if (
+    normalizedPath.startsWith(PROTOCOL_RELATIVE_PREFIX) ||
+    ABSOLUTE_URL_PATTERN.test(normalizedPath)
+  ) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'Absolute URLs are not allowed in the path.',
+    })
+  }
+
+  // remove leading slashes
+  return normalizedPath.replace(/^\/+/, '')
+}
+
+function buildTmdbUrl(path: string): string {
+  const normalizedPath = normalizeTmdbPath(path)
+  const url = new URL(normalizedPath, TMDB_API_URL)
+
+  if (url.origin !== TMDB_API_ORIGIN) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'Only TMDB paths are allowed.',
+    })
+  }
+
+  if (!url.pathname.startsWith('/3/')) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'TMDB path must stay within the API base path.',
+    })
+  }
+
+  const tmdbPath = url.pathname.slice(3) // remove the '/3/' prefix
+  const isAllowedPath = ALLOWED_TMDB_PATH_PREFIXES.some((prefix) => tmdbPath.startsWith(prefix))
+
+  if (!isAllowedPath) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: `TMDB path is not allowed.`,
+    })
+  }
+
+  return url.toString()
+}
 
 export async function fetchTmdb(
   event: H3Event,
@@ -22,9 +82,11 @@ export async function fetchTmdb(
   if (!apiKey) {
     throw createError({
       statusCode: 500,
-      message: 'TMDB API key is not configured. Set NUXT_TMDB_API_KEY.',
+      statusMessage: 'TMDB API key is not configured. Set NUXT_TMDB_API_KEY.',
     })
   }
+
+  const safeUrl = buildTmdbUrl(path)
 
   const ip = getRequestIP(event, { xForwardedFor: true }) ?? 'anonymous'
   const { tmdbLimiter } = createRateLimiter()
@@ -47,13 +109,12 @@ export async function fetchTmdb(
   if (!success) {
     throw createError({
       statusCode: 429,
-      message: 'Rate limit exceeded for TMDB API. Please try again later.',
+      statusMessage: 'Rate limit exceeded for TMDB API. Please try again later.',
     })
   }
 
   try {
-    return await $fetch(path, {
-      baseURL: TMDB_API_URL,
+    return await $fetch(safeUrl, {
       params: {
         language: 'en-US',
         ...query,

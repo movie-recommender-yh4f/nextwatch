@@ -21,12 +21,19 @@ function isTmdbSearchResponse(value: unknown): value is TmdbSearchResponse {
   return Array.isArray(candidate.results)
 }
 
-export default defineEventHandler(async (event) => {
-  const { q } = getQuery<{ q?: string }>(event)
-  const query = q?.trim() ?? ''
+function checkValidQuery(q: unknown): q is string {
+  if (typeof q !== 'string') {
+    return false
+  }
 
-  if (!query) {
-    return { results: [] }
+  return q.trim().length > 0
+}
+
+export default defineEventHandler(async (event) => {
+  const { q } = getQuery<{ q?: string | string[] }>(event)
+  const query = checkValidQuery(q) ? q.trim() : null
+  if (query === null) {
+    throw createError({ statusCode: 400, message: 'Invalid query' })
   }
 
   const payload = await fetchTmdb(event, '/search/movie', {

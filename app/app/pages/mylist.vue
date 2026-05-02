@@ -27,9 +27,9 @@
         </div>
         <div class="flex flex-col justify-center gap-2 flex-shrink-0">
           <button
-            @click.stop="handleMarkWatched(movie)"
             class="px-3 py-2 text-xs font-semibold border border-rose-200 hover:bg-rose-50 text-rose-600 rounded-full transition-colors flex items-center gap-1"
             title="Mark as Watched"
+            @click.stop="handleMarkWatched(movie)"
           >
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
@@ -48,9 +48,9 @@
             Watched
           </button>
           <button
-            @click.stop="handleRemove(movie)"
             class="px-3 py-2 text-xs font-medium text-gray-400 hover:text-red-500 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors flex items-center justify-center gap-1"
             title="Remove from My List"
+            @click.stop="handleRemove(movie)"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -87,8 +87,8 @@
           {{ undoAction.type === 'watched' ? 'marked as watched' : 'removed from My List' }}
         </span>
         <button
-          @click="handleUndo"
           class="text-rose-500 hover:text-rose-600 dark:text-rose-400 dark:hover:text-rose-300 font-semibold text-sm whitespace-nowrap transition-colors"
+          @click="handleUndo"
         >
           Undo
         </button>

@@ -44,8 +44,8 @@
           <strong>{{ undoAction.title }}</strong> removed from Watched
         </span>
         <button
-          @click="handleUndo"
           class="text-rose-500 hover:text-rose-600 dark:text-rose-400 dark:hover:text-rose-300 font-semibold text-sm whitespace-nowrap transition-colors"
+          @click="handleUndo"
         >
           Undo
         </button>

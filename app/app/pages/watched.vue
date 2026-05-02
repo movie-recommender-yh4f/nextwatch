@@ -41,8 +41,8 @@
         />
         <button
           v-if="searchQuery"
-          @click="searchQuery = ''"
           class="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-gray-600"
+          @click="searchQuery = ''"
         >
           <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -53,11 +53,11 @@
       <div class="flex flex-wrap gap-2 mb-3">
         <div class="relative dropdown-wrapper">
           <button
-            @click="toggleDropdown('genre')"
             class="flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-xl border transition-colors"
             :class="selectedGenres.length > 0
               ? 'bg-rose-500 text-white border-rose-500'
               : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'"
+            @click="toggleDropdown('genre')"
           >
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 4V2m0 2a2 2 0 110 4m0-4a2 2 0 100 4m10-4V2m0 2a2 2 0 110 4m0-4a2 2 0 100 4m-6 8v2m0-2a2 2 0 110-4m0 4a2 2 0 100-4" />
@@ -77,8 +77,8 @@
             <button
               v-for="genre in availableGenres"
               :key="genre"
-              @click="toggleGenre(genre)"
               class="w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              @click="toggleGenre(genre)"
             >
               <span
                 class="w-4 h-4 rounded border flex-shrink-0 flex items-center justify-center transition-colors"
@@ -100,11 +100,11 @@
 
         <div class="relative dropdown-wrapper">
           <button
-            @click="toggleDropdown('length')"
             class="flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-xl border transition-colors"
             :class="selectedRuntime
               ? 'bg-rose-500 text-white border-rose-500'
               : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'"
+            @click="toggleDropdown('length')"
           >
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -119,18 +119,18 @@
             class="absolute z-30 mt-1 left-0 w-48 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 py-1"
           >
             <button
-              @click="selectedRuntime = null; openDropdown = null"
               class="w-full px-3 py-2 text-sm text-left hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
               :class="!selectedRuntime ? 'text-rose-500 font-medium' : 'text-gray-700 dark:text-gray-300'"
+              @click="selectedRuntime = null; openDropdown = null"
             >
               Any length
             </button>
             <button
               v-for="range in RUNTIME_RANGES"
               :key="range.label"
-              @click="selectedRuntime = range; openDropdown = null"
               class="w-full px-3 py-2 text-sm text-left hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
               :class="selectedRuntime?.label === range.label ? 'text-rose-500 font-medium' : 'text-gray-700 dark:text-gray-300'"
+              @click="selectedRuntime = range; openDropdown = null"
             >
               {{ range.label }}
             </button>
@@ -139,11 +139,11 @@
 
         <div class="relative dropdown-wrapper">
           <button
-            @click="toggleDropdown('sort')"
             class="flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-xl border transition-colors"
             :class="sortBy !== 'default'
               ? 'bg-rose-500 text-white border-rose-500'
               : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'"
+            @click="toggleDropdown('sort')"
           >
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
@@ -160,9 +160,9 @@
             <button
               v-for="(label, key) in sortLabels"
               :key="key"
-              @click="sortBy = key as SortOption; openDropdown = null"
               class="w-full px-3 py-2 text-sm text-left hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
               :class="sortBy === key ? 'text-rose-500 font-medium' : 'text-gray-700 dark:text-gray-300'"
+              @click="sortBy = key as SortOption; openDropdown = null"
             >
               {{ label }}
             </button>
@@ -171,8 +171,8 @@
 
         <button
           v-if="hasActiveFilters"
-          @click="clearFilters"
           class="px-3 py-2 text-sm font-medium text-rose-500 hover:text-rose-600 transition-colors"
+          @click="clearFilters"
         >
           Clear all
         </button>
@@ -185,7 +185,7 @@
           class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-300 rounded-full"
         >
           {{ genre }}
-          <button @click="toggleGenre(genre)" class="hover:text-rose-900 dark:hover:text-rose-100">
+          <button class="hover:text-rose-900 dark:hover:text-rose-100" @click="toggleGenre(genre)">
             <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -214,7 +214,7 @@
         class="text-center text-gray-500 dark:text-gray-400 py-10 bg-white dark:bg-gray-800 rounded-2xl border border-dashed border-gray-300 dark:border-gray-600 mt-4"
       >
         <p>No movies match your filters.</p>
-        <button @click="clearFilters" class="text-rose-500 mt-2 inline-block hover:underline">
+        <button class="text-rose-500 mt-2 inline-block hover:underline" @click="clearFilters">
           Clear filters
         </button>
       </div>
@@ -244,9 +244,9 @@
             </div>
           </div>
           <button
-            @click.stop="handleRemove(movie)"
             class="self-center flex-shrink-0 text-gray-400 hover:text-red-500 transition-colors p-2"
             title="Remove from watched"
+            @click.stop="handleRemove(movie)"
           >
             <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
               <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
@@ -272,8 +272,8 @@
           <strong>{{ undoAction.movie.title }}</strong> removed from Watched
         </span>
         <button
-          @click="handleUndo"
           class="text-rose-500 hover:text-rose-600 dark:text-rose-400 dark:hover:text-rose-300 font-semibold text-sm whitespace-nowrap transition-colors"
+          @click="handleUndo"
         >
           Undo
         </button>

@@ -10,10 +10,10 @@
 
     <TransitionGroup
       v-else
+      ref="messagesContainer"
       name="list"
       tag="div"
       class="flex-1 overflow-y-auto p-4 space-y-4"
-      ref="messagesContainer"
     >
       <div
         v-for="(msg, i) in messages"
@@ -33,7 +33,7 @@
     </TransitionGroup>
 
     <div class="p-4 border-t border-gray-200 dark:border-gray-700">
-      <form @submit.prevent="sendMessage" class="flex gap-2">
+      <form class="flex gap-2" @submit.prevent="sendMessage">
         <input
           v-model="input"
           type="text"

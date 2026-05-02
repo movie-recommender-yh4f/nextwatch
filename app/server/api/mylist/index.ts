@@ -1,4 +1,6 @@
+import type { H3Event } from 'h3'
 import { getAuthorizedUser } from '../../utils/auth'
+import { throwSupabaseError } from '../../utils/api-error'
 
 interface HydratedMovie {
   tmdbId: number
@@ -19,10 +21,12 @@ interface MovieRow {
 }
 
 const USER_MY_LIST_TABLE = 'user_my_list'
+const USER_WATCHED_MOVIES_TABLE = 'user_watched_movies'
 const MOVIES_TABLE = 'movies'
 const APPEND_MY_LIST_RPC = 'append_my_list'
 const REMOVE_MY_LIST_RPC = 'remove_my_list'
 const SUPPORTED_METHODS = ['GET', 'POST', 'DELETE']
+const ALREADY_WATCHED_STATUS = 'Movie is already in watched list'
 
 function parseYear(releaseDate: string): number {
   return parseInt(releaseDate.split('-')[0] || '0', 10)
@@ -75,6 +79,7 @@ function toHydratedMovie(row: MovieRow): HydratedMovie {
 }
 
 async function hydrateMovies(
+  event: H3Event,
   supabase: Awaited<ReturnType<typeof getAuthorizedUser>>['supabase'],
   tmdbIds: number[]
 ): Promise<HydratedMovie[]> {
@@ -88,7 +93,14 @@ async function hydrateMovies(
     .in('tmdb_id', tmdbIds)
 
   if (error) {
-    throw createError({ statusCode: 500, statusMessage: error.message })
+    throwSupabaseError(event, error, {
+      event: 'mylist.hydrate_movies_failed',
+      publicMessage: 'Unable to load My List.',
+      extra: {
+        table: MOVIES_TABLE,
+        operation: 'select',
+      },
+    })
   }
 
   const rows = (data ?? []) as MovieRow[]
@@ -111,6 +123,7 @@ async function hydrateMovies(
 }
 
 async function callMyListRpc(
+  event: H3Event,
   supabase: Awaited<ReturnType<typeof getAuthorizedUser>>['supabase'],
   name: string,
   userId: string,
@@ -122,7 +135,45 @@ async function callMyListRpc(
   })
 
   if (error) {
-    throw createError({ statusCode: 500, statusMessage: error.message })
+    throwSupabaseError(event, error, {
+      event: 'mylist.rpc_failed',
+      userId,
+      tmdbId,
+      publicMessage: 'Unable to update My List.',
+      extra: {
+        rpc: name,
+      },
+    })
+  }
+}
+
+async function ensureMovieIsNotWatched(
+  event: H3Event,
+  supabase: Awaited<ReturnType<typeof getAuthorizedUser>>['supabase'],
+  userId: string,
+  tmdbId: number
+) {
+  const { data, error } = await supabase
+    .from(USER_WATCHED_MOVIES_TABLE)
+    .select('tmdb_id')
+    .eq('user_id', userId)
+    .eq('tmdb_id', tmdbId)
+
+  if (error) {
+    throwSupabaseError(event, error, {
+      event: 'mylist.watched_lookup_failed',
+      userId,
+      tmdbId,
+      publicMessage: 'Unable to update My List.',
+      extra: {
+        table: USER_WATCHED_MOVIES_TABLE,
+        operation: 'select',
+      },
+    })
+  }
+
+  if ((data ?? []).length > 0) {
+    throw createError({ statusCode: 409, statusMessage: ALREADY_WATCHED_STATUS })
   }
 }
 
@@ -139,20 +190,29 @@ export default defineEventHandler(async (event) => {
       .maybeSingle()
 
     if (error) {
-      throw createError({ statusCode: 500, statusMessage: error.message })
+      throwSupabaseError(event, error, {
+        event: 'mylist.list_failed',
+        userId: user.id,
+        publicMessage: 'Unable to load My List.',
+        extra: {
+          table: USER_MY_LIST_TABLE,
+          operation: 'select',
+        },
+      })
     }
 
     const tmdbIds = Array.isArray(data?.tmdb_ids) ? (data.tmdb_ids as number[]) : []
 
     return {
       success: true,
-      movies: await hydrateMovies(supabase, tmdbIds),
+      movies: await hydrateMovies(event, supabase, tmdbIds),
     }
   }
 
   if (method === 'POST') {
     const tmdbId = validateTmdbId(extractTmdbId(await readBody<unknown>(event)))
-    await callMyListRpc(supabase, APPEND_MY_LIST_RPC, user.id, tmdbId)
+    await ensureMovieIsNotWatched(event, supabase, user.id, tmdbId)
+    await callMyListRpc(event, supabase, APPEND_MY_LIST_RPC, user.id, tmdbId)
 
     return {
       success: true,
@@ -162,7 +222,7 @@ export default defineEventHandler(async (event) => {
 
   if (method === 'DELETE') {
     const tmdbId = validateTmdbId(extractTmdbId(await readBody<unknown>(event)))
-    await callMyListRpc(supabase, REMOVE_MY_LIST_RPC, user.id, tmdbId)
+    await callMyListRpc(event, supabase, REMOVE_MY_LIST_RPC, user.id, tmdbId)
 
     return {
       success: true,

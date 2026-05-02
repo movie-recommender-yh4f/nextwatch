@@ -10,8 +10,8 @@
         class="bg-white dark:bg-gray-900 rounded-2xl w-full max-w-4xl overflow-hidden shadow-2xl relative flex flex-col max-h-[90vh]"
       >
       <button
-        @click="closePanel"
         class="absolute top-3 right-3 text-gray-700 dark:text-white bg-white/50 dark:bg-black/50 hover:bg-white/80 dark:hover:bg-black/80 rounded-full p-2 z-10 transition-colors"
+        @click="closePanel"
       >
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path
@@ -87,9 +87,9 @@
           <div class="flex gap-3">
             <button
               v-if="isWatched"
-              @click="$emit('remove')"
               class="group btn-press flex-1 py-3 bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-red-500 hover:text-white rounded-xl text-sm font-bold flex justify-center items-center gap-2 transition-colors"
               title="Remove from watched"
+              @click="$emit('remove')"
             >
               <svg
                 class="w-5 h-5 text-green-500 group-hover:hidden"
@@ -122,8 +122,8 @@
             </button>
             <button
               v-else
-              @click="$emit('add')"
               class="btn-press flex-1 py-3 bg-rose-500 hover:bg-rose-600 text-white rounded-xl text-sm font-bold flex justify-center items-center gap-2 transition-colors"
+              @click="$emit('add')"
             >
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
@@ -137,12 +137,12 @@
             </button>
             <button
               v-if="showMyListButton"
-              @click="$emit('toggle-mylist')"
               class="btn-press py-3 px-4 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-colors"
               :class="isInMyList
                 ? 'bg-rose-500 text-white hover:bg-rose-600'
                 : 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 hover:text-rose-500'"
               :title="isInMyList ? 'Remove from My List' : 'Add to My List'"
+              @click="$emit('toggle-mylist')"
             >
               <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />

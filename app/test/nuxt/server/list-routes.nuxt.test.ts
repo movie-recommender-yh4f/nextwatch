@@ -93,11 +93,14 @@ function createMockSupabase(state: SupabaseState) {
 }
 
 function createWatchedBuilder(state: SupabaseState) {
+  const filters: Record<string, unknown> = {}
+
   const builder = {
     select() {
       return builder
     },
     eq(key: string, value: unknown) {
+      filters[key] = value
       state.deleteFilters[key] = value
       return builder
     },
@@ -113,8 +116,20 @@ function createWatchedBuilder(state: SupabaseState) {
       return builder
     },
     async then(resolve: (value: { data: Array<{ tmdb_id: number }>; error: null }) => void) {
+      const filteredIds = state.watchedIds.filter((tmdbId) => {
+        if (typeof filters.tmdb_id === 'number' && filters.tmdb_id !== tmdbId) {
+          return false
+        }
+
+        if (typeof filters.user_id === 'string' && filters.user_id !== TEST_USER_ID) {
+          return false
+        }
+
+        return true
+      })
+
       resolve({
-        data: state.watchedIds.map((tmdbId) => ({ tmdb_id: tmdbId })),
+        data: filteredIds.map((tmdbId) => ({ tmdb_id: tmdbId })),
         error: null,
       })
     },
@@ -274,20 +289,31 @@ describe('normalized list routes', () => {
   it('uses my-list RPC functions for ID-only mutations', async () => {
     const addResponse = await fetch(`${baseUrl}/api/mylist`, {
       method: 'POST',
-      body: JSON.stringify({ tmdbId: 550 }),
+      body: JSON.stringify({ tmdbId: 13 }),
       headers: { 'Content-Type': 'application/json' },
     })
     const removeResponse = await fetch(`${baseUrl}/api/mylist`, {
       method: 'DELETE',
-      body: JSON.stringify({ tmdbId: 550 }),
+      body: JSON.stringify({ tmdbId: 13 }),
       headers: { 'Content-Type': 'application/json' },
     })
 
     expect(addResponse.status).toBe(200)
     expect(removeResponse.status).toBe(200)
     expect(state.rpcCalls).toEqual([
-      { name: 'append_my_list', payload: { target_user_id: TEST_USER_ID, target_tmdb_id: 550 } },
-      { name: 'remove_my_list', payload: { target_user_id: TEST_USER_ID, target_tmdb_id: 550 } },
+      { name: 'append_my_list', payload: { target_user_id: TEST_USER_ID, target_tmdb_id: 13 } },
+      { name: 'remove_my_list', payload: { target_user_id: TEST_USER_ID, target_tmdb_id: 13 } },
     ])
+  })
+
+  it('rejects adding a watched movie to my-list', async () => {
+    const response = await fetch(`${baseUrl}/api/mylist`, {
+      method: 'POST',
+      body: JSON.stringify({ tmdbId: 550 }),
+      headers: { 'Content-Type': 'application/json' },
+    })
+
+    expect(response.status).toBe(409)
+    expect(state.rpcCalls).toEqual([])
   })
 })

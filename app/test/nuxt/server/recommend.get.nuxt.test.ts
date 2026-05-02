@@ -106,9 +106,7 @@ interface MockSupabaseState {
 }
 
 function computeWatchedHash(movies: typeof WATCHED_MOVIES): string {
-  const sorted = [...movies]
-    .sort((a, b) => a.tmdbId - b.tmdbId)
-    .map(({ tmdbId, title, year }) => ({ tmdbId, title, year }))
+  const sorted = [...movies].sort((a, b) => a.tmdbId - b.tmdbId).map(({ tmdbId }) => ({ tmdbId }))
 
   return createHash('sha256').update(JSON.stringify(sorted)).digest('hex')
 }

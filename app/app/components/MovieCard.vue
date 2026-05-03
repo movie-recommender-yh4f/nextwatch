@@ -10,10 +10,7 @@
         class="absolute inset-0 h-full w-full object-cover"
       />
 
-      <div
-        v-if="isInMyList || isWatched"
-        class="absolute right-3 top-3 z-20 flex flex-col gap-1.5"
-      >
+      <div v-if="isInMyList || isWatched" class="absolute right-3 top-3 z-20 flex flex-col gap-1.5">
         <div
           v-if="isWatched"
           class="movie-card-status flex items-center justify-center rounded-full bg-black/60 backdrop-blur-sm"
@@ -51,16 +48,35 @@
         </div>
       </div>
 
-      <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent"></div>
+      <div
+        class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent"
+      ></div>
+
+      <div
+        v-if="formattedRating"
+        class="movie-card-rating absolute bottom-3 right-3 z-20 inline-flex items-center gap-1 rounded-full border border-white/15 bg-black/80 px-2.5 py-1 text-white shadow-lg backdrop-blur-md"
+      >
+        <svg
+          class="movie-card-rating-icon text-amber-400"
+          viewBox="0 0 24 24"
+          fill="currentColor"
+          aria-hidden="true"
+        >
+          <path
+            d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"
+          />
+        </svg>
+        <span class="movie-card-rating-text">{{ formattedRating }}</span>
+      </div>
     </div>
 
     <div class="movie-card-copy space-y-2">
       <div class="space-y-1">
-        <h1 class="movie-card-title line-clamp-2 text-white">{{ movie.title }}</h1>
-        <div class="movie-card-meta flex items-center gap-2 text-zinc-400">
-          <span class="truncate">{{ movie.director || UNKNOWN_DIRECTOR_LABEL }}</span>
-          <span class="h-1 w-1 rounded-full bg-zinc-700"></span>
-          <span>{{ movie.year }}</span>
+        <div class="movie-card-heading flex items-start justify-between gap-3">
+          <h1 class="movie-card-title line-clamp-2 text-white">{{ movie.title }}</h1>
+          <span v-if="movie.year" class="movie-card-year shrink-0 text-zinc-200">{{
+            movie.year
+          }}</span>
         </div>
       </div>
 
@@ -92,9 +108,7 @@
 
       <button
         class="movie-card-action-primary btn-press flex items-center justify-center rounded-full text-black transition-all shadow-xl"
-        :class="isWatched
-          ? 'bg-zinc-300'
-          : 'bg-white hover:scale-105 hover:bg-zinc-200'"
+        :class="isWatched ? 'bg-zinc-300' : 'bg-white hover:scale-105 hover:bg-zinc-200'"
         @click.stop="$emit('watched', movie)"
       >
         <svg class="movie-card-icon-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -115,9 +129,11 @@
 
       <button
         class="movie-card-action btn-press flex items-center justify-center rounded-full border transition-all"
-        :class="isInMyList
-          ? 'border-white bg-white text-black'
-          : 'border-zinc-800 bg-black text-zinc-500 hover:border-white hover:text-white'"
+        :class="
+          isInMyList
+            ? 'border-white bg-white text-black'
+            : 'border-zinc-800 bg-black text-zinc-500 hover:border-white hover:text-white'
+        "
         @click.stop="$emit('to-watch', movie)"
       >
         <svg class="movie-card-icon-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -146,7 +162,8 @@
 <script setup>
 import { computed, ref } from 'vue'
 
-const UNKNOWN_DIRECTOR_LABEL = 'Unknown creator'
+const MAX_RATING = 10
+const RATING_PRECISION = 1
 
 const props = defineProps({
   movie: {
@@ -178,6 +195,15 @@ const genreTags = computed(() => {
     .split(',')
     .map((genre) => genre.trim())
     .filter(Boolean)
+})
+const formattedRating = computed(() => {
+  const rating = props.movie.rating
+
+  if (typeof rating !== 'number' || !Number.isFinite(rating) || rating <= 0) {
+    return null
+  }
+
+  return `${rating.toFixed(RATING_PRECISION)}/${MAX_RATING}`
 })
 
 const openDetails = async () => {
@@ -216,6 +242,12 @@ const closeDetails = () => {
   width: 100%;
 }
 
+.movie-card-heading {
+  align-items: center;
+  margin-bottom: clamp(0.12rem, 1.5cqw, 0.4rem);
+  padding-bottom: clamp(0.08rem, 0.8cqw, 0.18rem);
+}
+
 .movie-card-copy > :not([hidden]) ~ :not([hidden]) {
   margin-top: clamp(0.1rem, 1.8cqw, 0.5rem);
 }
@@ -227,14 +259,19 @@ const closeDetails = () => {
 
 .movie-card-title {
   font-size: clamp(1.05rem, 8.25cqw, 1.9rem);
-  line-height: 1.05;
+  line-height: 1.14;
   letter-spacing: -0.03em;
   font-weight: 700;
+  flex: 1 1 auto;
 }
 
-.movie-card-meta {
-  gap: clamp(0.12rem, 1.8cqw, 0.5rem);
-  font-size: clamp(0.68rem, 4cqw, 0.92rem);
+.movie-card-year {
+  font-size: clamp(0.75rem, 4.2cqw, 0.98rem);
+  line-height: 1;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.95;
 }
 
 .movie-card-chip {
@@ -247,6 +284,22 @@ const closeDetails = () => {
 .movie-card-status {
   width: clamp(1.2rem, 8.7cqw, 2rem);
   height: clamp(1.2rem, 8.7cqw, 2rem);
+}
+
+.movie-card-rating {
+  font-size: clamp(0.68rem, 3.8cqw, 0.9rem);
+  line-height: 1;
+  font-weight: 700;
+}
+
+.movie-card-rating-icon {
+  width: clamp(0.72rem, 3.9cqw, 0.92rem);
+  height: clamp(0.72rem, 3.9cqw, 0.92rem);
+  filter: drop-shadow(0 1px 1px rgb(0 0 0 / 0.45));
+}
+
+.movie-card-rating-text {
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.65);
 }
 
 .movie-card-action {

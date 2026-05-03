@@ -374,6 +374,7 @@ const currentMovieFormatted = computed(() => {
     title: details?.title ?? '',
     year: details?.year ?? 0,
     image: details?.poster ?? '',
+    rating: details?.rating ?? null,
     genre: details?.genres?.join(', ') ?? 'Unknown Genre',
     director: details?.directors?.[0] ?? null,
   }

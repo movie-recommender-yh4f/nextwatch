@@ -94,9 +94,10 @@
           class="mb-[clamp(0.12rem,1.5cqw,0.4rem)] flex items-center justify-between gap-3 pb-[clamp(0.08rem,0.8cqw,0.18rem)]"
         >
           <h1
-            class="line-clamp-2 flex-1 text-[clamp(1.05rem,8.25cqw,1.9rem)] font-bold leading-[1.14] tracking-[-0.03em] text-white"
+            class="truncate whitespace-nowrap flex-1 text-[clamp(1.05rem,8.25cqw,1.9rem)] font-bold leading-[1.14] tracking-[-0.03em] text-white"
+            :title="movie.title"
           >
-            {{ movie.title }}
+            {{ displayedTitle }}
           </h1>
           <span
             v-if="movie.year"
@@ -253,6 +254,7 @@ const formattedRating = computed(() => {
 
   return `${rating.toFixed(RATING_PRECISION)}/${MAX_RATING}`
 })
+const displayedTitle = computed(() => truncateMovieTitle(props.movie.title))
 
 const openDetails = async () => {
   isDetailsOpen.value = true
@@ -269,5 +271,19 @@ const closeDetails = () => {
   setTimeout(() => {
     detailedMovie.value = null
   }, 300)
+}
+
+const TITLE_MAX_LENGTH = 34
+
+function truncateMovieTitle(title) {
+  if (typeof title !== 'string') {
+    return ''
+  }
+
+  if (title.length <= TITLE_MAX_LENGTH) {
+    return title
+  }
+
+  return `${title.slice(0, TITLE_MAX_LENGTH - 1).trimEnd()}…`
 }
 </script>

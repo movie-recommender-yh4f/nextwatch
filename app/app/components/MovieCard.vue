@@ -1,17 +1,21 @@
 <template>
-  <div class="movie-card flex h-full min-h-0 w-full flex-col">
-    <div class="movie-card-poster-stack relative">
+  <div
+    class="[container-type:inline-size] flex h-full min-h-0 w-full flex-col justify-center gap-[clamp(0.25rem,3.5cqw,1rem)]"
+  >
+    <div class="relative w-full shrink-0 aspect-[1/1.5]">
       <div
-        class="movie-card-poster-back movie-card-poster-back-left"
+        v-if="posterStackCount >= 2"
+        class="pointer-events-none absolute inset-0 rounded-[1.125rem] border border-[rgb(82_82_91/0.9)] bg-zinc-900 opacity-30 [box-shadow:0_10px_26px_rgb(0_0_0/0.2),0_0_0_1px_rgb(255_255_255/0.03)] [transform:translateX(-0.55rem)_rotate(-1.6deg)]"
         aria-hidden="true"
       ></div>
       <div
-        class="movie-card-poster-back movie-card-poster-back-right"
+        v-if="posterStackCount >= 1"
+        class="pointer-events-none absolute inset-0 rounded-[1.125rem] border border-[rgb(82_82_91/0.9)] bg-zinc-900 opacity-40 [box-shadow:0_10px_26px_rgb(0_0_0/0.2),0_0_0_1px_rgb(255_255_255/0.03)] [transform:translateX(0.55rem)_rotate(1.4deg)]"
         aria-hidden="true"
       ></div>
 
       <div
-        class="movie-card-poster relative z-10 cursor-pointer overflow-hidden border border-zinc-800 bg-zinc-900 shadow-glow"
+        class="relative z-10 w-full shrink-0 aspect-[1/1.5] cursor-pointer overflow-hidden rounded-[1.125rem] border border-zinc-800 bg-zinc-900 shadow-glow"
         @click="openDetails"
       >
         <img
@@ -26,7 +30,7 @@
         >
           <div
             v-if="isWatched"
-            class="movie-card-status flex items-center justify-center rounded-full bg-black/60 backdrop-blur-sm"
+            class="flex h-[clamp(1.2rem,8.7cqw,2rem)] w-[clamp(1.2rem,8.7cqw,2rem)] items-center justify-center rounded-full bg-black/60 backdrop-blur-sm"
             title="Already watched"
           >
             <svg class="h-4 w-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -47,7 +51,7 @@
 
           <div
             v-if="isInMyList"
-            class="movie-card-status flex items-center justify-center rounded-full bg-black/60 backdrop-blur-sm"
+            class="flex h-[clamp(1.2rem,8.7cqw,2rem)] w-[clamp(1.2rem,8.7cqw,2rem)] items-center justify-center rounded-full bg-black/60 backdrop-blur-sm"
             title="In My List"
           >
             <svg class="h-4 w-4 text-zinc-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -67,10 +71,10 @@
 
         <div
           v-if="formattedRating"
-          class="movie-card-rating absolute bottom-3 right-3 z-20 inline-flex items-center gap-1 rounded-full border border-white/15 bg-black/80 px-2.5 py-1 text-white shadow-lg backdrop-blur-md"
+          class="absolute bottom-3 right-3 z-20 inline-flex items-center gap-1 rounded-full border border-white/15 bg-black/80 px-2.5 py-1 text-[clamp(0.68rem,3.8cqw,0.9rem)] font-bold leading-none text-white shadow-lg backdrop-blur-md"
         >
           <svg
-            class="movie-card-rating-icon text-amber-400"
+            class="h-[clamp(0.72rem,3.9cqw,0.92rem)] w-[clamp(0.72rem,3.9cqw,0.92rem)] text-amber-400 [filter:drop-shadow(0_1px_1px_rgb(0_0_0/0.45))]"
             viewBox="0 0 24 24"
             fill="currentColor"
             aria-hidden="true"
@@ -79,16 +83,25 @@
               d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"
             />
           </svg>
-          <span class="movie-card-rating-text">{{ formattedRating }}</span>
+          <span class="[text-shadow:0_1px_2px_rgb(0_0_0/0.65)]">{{ formattedRating }}</span>
         </div>
       </div>
     </div>
 
-    <div class="movie-card-copy space-y-2">
+    <div class="w-full space-y-2">
       <div class="space-y-1">
-        <div class="movie-card-heading flex items-start justify-between gap-3">
-          <h1 class="movie-card-title line-clamp-2 text-white">{{ movie.title }}</h1>
-          <span v-if="movie.year" class="movie-card-year shrink-0 text-zinc-400">{{
+        <div
+          class="mb-[clamp(0.12rem,1.5cqw,0.4rem)] flex items-center justify-between gap-3 pb-[clamp(0.08rem,0.8cqw,0.18rem)]"
+        >
+          <h1
+            class="line-clamp-2 flex-1 text-[clamp(1.05rem,8.25cqw,1.9rem)] font-bold leading-[1.14] tracking-[-0.03em] text-white"
+          >
+            {{ movie.title }}
+          </h1>
+          <span
+            v-if="movie.year"
+            class="shrink-0 text-[clamp(0.75rem,4.2cqw,0.98rem)] font-medium uppercase leading-none tracking-[0.08em] text-zinc-400 opacity-90"
+          >{{
             movie.year
           }}</span>
         </div>
@@ -98,19 +111,26 @@
         <span
           v-for="tag in genreTags"
           :key="tag"
-          class="movie-card-chip rounded-full border border-zinc-800 bg-zinc-900/60 text-zinc-400"
+          class="rounded-full border border-zinc-800 bg-zinc-900/60 px-[clamp(0.18rem,1.5cqw,0.35rem)] py-[clamp(0.4rem,3.4cqw,0.78rem)] text-[clamp(0.48rem,2.95cqw,0.68rem)] font-semibold tracking-[0.16em] text-zinc-400 [padding-inline:clamp(0.4rem,3.4cqw,0.78rem)] [padding-block:clamp(0.18rem,1.5cqw,0.35rem)]"
         >
           {{ tag }}
         </span>
       </div>
     </div>
 
-    <div class="movie-card-actions flex shrink-0 items-center justify-center gap-4">
+    <div
+      class="flex shrink-0 items-center justify-center gap-[clamp(0.25rem,3.5cqw,1rem)] pt-[clamp(0rem,0.35cqw,0.1rem)]"
+    >
       <button
-        class="movie-card-action btn-press flex items-center justify-center rounded-full border border-zinc-800 bg-black text-zinc-500 transition-all hover:border-white hover:text-white"
+        class="btn-press flex h-[clamp(2.1rem,16.1cqw,3.7rem)] w-[clamp(2.1rem,16.1cqw,3.7rem)] items-center justify-center rounded-full border border-zinc-800 bg-black text-zinc-500 transition-all hover:border-white hover:text-white [box-shadow:0_0_0_1px_rgb(255_255_255/0.04),0_8px_18px_rgb(0_0_0/0.18),0_0_18px_rgb(255_255_255/0.05)]"
         @click.stop="$emit('dislike', movie)"
       >
-        <svg class="movie-card-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg
+          class="h-[clamp(0.9rem,6.7cqw,1.55rem)] w-[clamp(0.9rem,6.7cqw,1.55rem)]"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
           <path
             stroke-linecap="round"
             stroke-linejoin="round"
@@ -121,11 +141,16 @@
       </button>
 
       <button
-        class="movie-card-action-primary btn-press flex items-center justify-center rounded-full text-black transition-all shadow-xl"
+        class="btn-press flex h-[clamp(2.7rem,20.4cqw,4.7rem)] w-[clamp(2.7rem,20.4cqw,4.7rem)] items-center justify-center rounded-full text-black transition-all shadow-xl [box-shadow:0_0_0_1px_rgb(255_255_255/0.08),0_10px_24px_rgb(0_0_0/0.22),0_0_22px_rgb(255_255_255/0.08)]"
         :class="isWatched ? 'bg-zinc-300' : 'bg-white hover:scale-105 hover:bg-zinc-200'"
         @click.stop="$emit('watched', movie)"
       >
-        <svg class="movie-card-icon-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg
+          class="h-[clamp(1.05rem,8.25cqw,1.9rem)] w-[clamp(1.05rem,8.25cqw,1.9rem)]"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
           <path
             stroke-linecap="round"
             stroke-linejoin="round"
@@ -142,7 +167,7 @@
       </button>
 
       <button
-        class="movie-card-action btn-press flex items-center justify-center rounded-full border transition-all"
+        class="btn-press flex h-[clamp(2.1rem,16.1cqw,3.7rem)] w-[clamp(2.1rem,16.1cqw,3.7rem)] items-center justify-center rounded-full border transition-all [box-shadow:0_0_0_1px_rgb(255_255_255/0.04),0_8px_18px_rgb(0_0_0/0.18),0_0_18px_rgb(255_255_255/0.05)]"
         :class="
           isInMyList
             ? 'border-white bg-white text-black'
@@ -150,7 +175,12 @@
         "
         @click.stop="$emit('to-watch', movie)"
       >
-        <svg class="movie-card-icon-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg
+          class="h-[clamp(1.05rem,8.25cqw,1.9rem)] w-[clamp(1.05rem,8.25cqw,1.9rem)]"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
           <path
             v-if="isInMyList"
             stroke-linecap="round"
@@ -191,6 +221,10 @@ const props = defineProps({
   isWatched: {
     type: Boolean,
     default: false,
+  },
+  posterStackCount: {
+    type: Number,
+    default: 0,
   },
 })
 
@@ -237,130 +271,3 @@ const closeDetails = () => {
   }, 300)
 }
 </script>
-
-<style scoped>
-.movie-card {
-  container-type: inline-size;
-  gap: clamp(0.25rem, 3.5cqw, 1rem);
-  justify-content: center;
-}
-
-.movie-card-poster {
-  flex: 0 0 auto;
-  width: 100%;
-  aspect-ratio: 1 / 1.5;
-  border-radius: 1.125rem;
-}
-
-.movie-card-poster-stack {
-  flex: 0 0 auto;
-  width: 100%;
-  aspect-ratio: 1 / 1.5;
-}
-
-.movie-card-poster-back {
-  position: absolute;
-  inset: 0;
-  border-radius: 1.125rem;
-  background: rgb(24 24 27);
-  border: 1px solid rgb(82 82 91 / 0.9);
-  box-shadow:
-    0 10px 26px rgb(0 0 0 / 0.2),
-    0 0 0 1px rgb(255 255 255 / 0.03);
-  pointer-events: none;
-}
-
-.movie-card-poster-back-left {
-  opacity: 0.3;
-  transform: translateX(-0.55rem) rotate(-1.6deg);
-}
-
-.movie-card-poster-back-right {
-  opacity: 0.42;
-  transform: translateX(0.55rem) rotate(1.4deg);
-}
-
-.movie-card-copy {
-  width: 100%;
-}
-
-.movie-card-heading {
-  align-items: center;
-  margin-bottom: clamp(0.12rem, 1.5cqw, 0.4rem);
-  padding-bottom: clamp(0.08rem, 0.8cqw, 0.18rem);
-}
-
-.movie-card-copy > :not([hidden]) ~ :not([hidden]) {
-  margin-top: clamp(0.1rem, 1.8cqw, 0.5rem);
-}
-
-.movie-card-actions {
-  padding-top: clamp(0rem, 0.35cqw, 0.1rem);
-  gap: clamp(0.25rem, 3.5cqw, 1rem);
-}
-
-.movie-card-title {
-  font-size: clamp(1.05rem, 8.25cqw, 1.9rem);
-  line-height: 1.14;
-  letter-spacing: -0.03em;
-  font-weight: 700;
-  flex: 1 1 auto;
-}
-
-.movie-card-year {
-  font-size: clamp(0.75rem, 4.2cqw, 0.98rem);
-  line-height: 1;
-  font-weight: 500;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  opacity: 0.9;
-}
-
-.movie-card-chip {
-  padding: clamp(0.18rem, 1.5cqw, 0.35rem) clamp(0.4rem, 3.4cqw, 0.78rem);
-  font-size: clamp(0.48rem, 2.95cqw, 0.68rem);
-  letter-spacing: 0.16em;
-  font-weight: 600;
-}
-
-.movie-card-status {
-  width: clamp(1.2rem, 8.7cqw, 2rem);
-  height: clamp(1.2rem, 8.7cqw, 2rem);
-}
-
-.movie-card-rating {
-  font-size: clamp(0.68rem, 3.8cqw, 0.9rem);
-  line-height: 1;
-  font-weight: 700;
-}
-
-.movie-card-rating-icon {
-  width: clamp(0.72rem, 3.9cqw, 0.92rem);
-  height: clamp(0.72rem, 3.9cqw, 0.92rem);
-  filter: drop-shadow(0 1px 1px rgb(0 0 0 / 0.45));
-}
-
-.movie-card-rating-text {
-  text-shadow: 0 1px 2px rgb(0 0 0 / 0.65);
-}
-
-.movie-card-action {
-  width: clamp(2.1rem, 16.1cqw, 3.7rem);
-  height: clamp(2.1rem, 16.1cqw, 3.7rem);
-}
-
-.movie-card-action-primary {
-  width: clamp(2.7rem, 20.4cqw, 4.7rem);
-  height: clamp(2.7rem, 20.4cqw, 4.7rem);
-}
-
-.movie-card-icon {
-  width: clamp(0.9rem, 6.7cqw, 1.55rem);
-  height: clamp(0.9rem, 6.7cqw, 1.55rem);
-}
-
-.movie-card-icon-primary {
-  width: clamp(1.05rem, 8.25cqw, 1.9rem);
-  height: clamp(1.05rem, 8.25cqw, 1.9rem);
-}
-</style>

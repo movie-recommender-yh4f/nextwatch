@@ -1,9 +1,15 @@
 <template>
   <div class="relative flex h-full flex-col overflow-hidden bg-background text-on-background">
-    <div class="discovery-viewport flex h-full flex-col px-4 pt-4 sm:px-6 sm:pt-5 lg:px-8">
+    <div
+      class="flex h-full flex-col px-4 pb-[var(--footer-clearance,0.85rem)] pt-4 sm:px-6 sm:pt-5 lg:px-8"
+    >
       <div v-if="pending" class="flex min-h-0 flex-1 items-center justify-center">
-        <div class="discovery-stage">
-          <div class="discovery-card-shell">
+        <div
+          class="mx-auto flex h-full min-h-0 w-[min(100%,29rem,max(16rem,var(--height-fit-width)))] max-h-full flex-col justify-center [--card-non-poster-height:clamp(9.25rem,19dvh,12rem)] [--fit-safety:clamp(0.85rem,2dvh,1.5rem)] [--footer-clearance:clamp(0.65rem,1.75dvh,1.25rem)] [--footer-height:4rem] [--header-height:4rem] [--height-fit-width:calc((100dvh-var(--header-height)-var(--footer-height)-var(--page-vertical-padding)-var(--footer-clearance)-var(--card-non-poster-height)-var(--fit-safety))/1.5)] [--page-vertical-padding:1.5rem] sm:[--footer-height:4.25rem] sm:[--page-vertical-padding:2rem] xl:w-[min(100%,27rem,max(16rem,var(--height-fit-width)))] max-[760px]:[--card-non-poster-height:clamp(7.85rem,17dvh,9.75rem)] max-[760px]:[--fit-safety:clamp(0.65rem,1.5dvh,1rem)] max-[760px]:[--footer-clearance:clamp(0.5rem,1.4dvh,0.85rem)] max-[680px]:[--card-non-poster-height:clamp(7rem,16dvh,8.65rem)] max-[680px]:[--fit-safety:0.65rem] max-[680px]:[--footer-clearance:0.5rem]"
+        >
+          <div
+            class="[container-type:inline-size] flex min-h-0 max-h-full w-full flex-1 flex-col justify-center px-[clamp(0.35rem,1vw,0.85rem)] py-[clamp(0.15rem,0.5vw,0.4rem)] sm:px-[0.35rem] max-[420px]:px-[0.25rem] max-[760px]:py-[0.1rem] max-[680px]:py-0"
+          >
             <SkeletonMovieCard />
           </div>
         </div>
@@ -64,7 +70,9 @@
         <p class="mb-6 text-sm uppercase tracking-[0.24em] text-zinc-500">
           Ready for another round?
         </p>
-        <div class="empty-state-actions flex w-full max-w-md items-center justify-center gap-3">
+        <div
+          class="flex w-full max-w-md items-center justify-center gap-3 max-[720px]:flex-col max-[720px]:[&>button]:w-full max-[390px]:flex-col max-[390px]:[&>button]:w-full"
+        >
           <button
             class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full border border-zinc-700 px-3 py-2 text-sm font-semibold text-zinc-200 transition-colors hover:border-white hover:text-white disabled:opacity-50"
             :disabled="pending"
@@ -104,8 +112,12 @@
       </div>
 
       <div v-else class="flex min-h-0 flex-1 items-center justify-center">
-        <div class="discovery-stage">
-          <div class="discovery-card-shell">
+        <div
+          class="mx-auto flex h-full min-h-0 w-[min(100%,29rem,max(16rem,var(--height-fit-width)))] max-h-full flex-col justify-center [--card-non-poster-height:clamp(9.25rem,19dvh,12rem)] [--fit-safety:clamp(0.85rem,2dvh,1.5rem)] [--footer-clearance:clamp(0.65rem,1.75dvh,1.25rem)] [--footer-height:4rem] [--header-height:4rem] [--height-fit-width:calc((100dvh-var(--header-height)-var(--footer-height)-var(--page-vertical-padding)-var(--footer-clearance)-var(--card-non-poster-height)-var(--fit-safety))/1.5)] [--page-vertical-padding:1.5rem] sm:[--footer-height:4.25rem] sm:[--page-vertical-padding:2rem] xl:w-[min(100%,27rem,max(16rem,var(--height-fit-width)))] max-[760px]:[--card-non-poster-height:clamp(7.85rem,17dvh,9.75rem)] max-[760px]:[--fit-safety:clamp(0.65rem,1.5dvh,1rem)] max-[760px]:[--footer-clearance:clamp(0.5rem,1.4dvh,0.85rem)] max-[680px]:[--card-non-poster-height:clamp(7rem,16dvh,8.65rem)] max-[680px]:[--fit-safety:0.65rem] max-[680px]:[--footer-clearance:0.5rem]"
+        >
+          <div
+            class="[container-type:inline-size] flex min-h-0 max-h-full w-full flex-1 flex-col justify-center px-[clamp(0.35rem,1vw,0.85rem)] py-[clamp(0.15rem,0.5vw,0.4rem)] sm:px-[0.35rem] max-[420px]:px-[0.25rem] max-[760px]:py-[0.1rem] max-[680px]:py-0"
+          >
             <div v-if="showInlineRecommendationFailure" class="w-full text-center text-zinc-400">
               <AlertMessage type="error" :message="recommendationFailureMessage" />
               <div
@@ -139,6 +151,7 @@
                   :movie="currentMovieFormatted"
                   :is-in-my-list="isInMyList"
                   :is-watched="isWatched"
+                  :poster-stack-count="remainingPosterStackCount"
                   @dislike="handleDislike"
                   @watched="handleLike"
                   @to-watch="handleAddToList"
@@ -188,6 +201,7 @@ const FETCH_MODE = {
 const RETRY_COOLDOWN_S = 30
 const RETRY_COOLDOWN_KEY = 'retry-cooldown-expires'
 const FALLBACK_RECOMMENDATION_ERROR_MESSAGE = 'Recommendations are unavailable right now.'
+const MAX_POSTER_STACK_CARDS = 2
 
 const {
   watchedMovies,
@@ -379,6 +393,10 @@ const currentMovieFormatted = computed(() => {
     director: details?.directors?.[0] ?? null,
   }
 })
+
+const remainingPosterStackCount = computed(() =>
+  Math.max(0, Math.min(MAX_POSTER_STACK_CARDS, movies.value.length - 1))
+)
 
 const isInMyList = computed(() => {
   const id = currentMovie.value?.tmdbId
@@ -641,111 +659,3 @@ const handleModalClose = () => {
   }
 }
 </script>
-
-<style scoped>
-.discovery-stage {
-  --header-height: 4rem;
-  --footer-height: 4rem;
-  --page-vertical-padding: 1.5rem;
-  --footer-clearance: clamp(0.65rem, 1.75dvh, 1.25rem);
-  --fit-safety: clamp(0.85rem, 2dvh, 1.5rem);
-  --card-non-poster-height: clamp(9.25rem, 19dvh, 12rem);
-  --height-fit-width: calc(
-    (100dvh - var(--header-height) - var(--footer-height) - var(--page-vertical-padding) - var(--footer-clearance) - var(--card-non-poster-height) - var(--fit-safety)) / 1.5
-  );
-  display: flex;
-  min-height: 0;
-  width: min(100%, 29rem, max(16rem, var(--height-fit-width)));
-  height: 100%;
-  max-height: 100%;
-  flex-direction: column;
-  justify-content: center;
-  margin-inline: auto;
-}
-
-.discovery-viewport {
-  padding-bottom: var(--footer-clearance, 0.85rem);
-}
-
-.discovery-card-shell {
-  container-type: inline-size;
-  display: flex;
-  min-height: 0;
-  max-height: 100%;
-  flex: 1 1 auto;
-  flex-direction: column;
-  justify-content: center;
-  width: 100%;
-  padding-inline: clamp(0.35rem, 1vw, 0.85rem);
-  padding-block: clamp(0.15rem, 0.5vw, 0.4rem);
-}
-
-@media (max-width: 640px) {
-  .discovery-card-shell {
-    padding-inline: 0.35rem;
-  }
-}
-
-@media (max-width: 420px) {
-  .discovery-card-shell {
-    padding-inline: 0.25rem;
-  }
-}
-
-@media (max-height: 760px) {
-  .discovery-stage {
-    --card-non-poster-height: clamp(7.85rem, 17dvh, 9.75rem);
-    --footer-clearance: clamp(0.5rem, 1.4dvh, 0.85rem);
-    --fit-safety: clamp(0.65rem, 1.5dvh, 1rem);
-  }
-
-  .discovery-card-shell {
-    padding-block: 0.1rem;
-  }
-}
-
-@media (max-height: 680px) {
-  .discovery-stage {
-    --card-non-poster-height: clamp(7rem, 16dvh, 8.65rem);
-    --footer-clearance: 0.5rem;
-    --fit-safety: 0.65rem;
-  }
-
-  .discovery-card-shell {
-    padding-block: 0;
-  }
-}
-
-@media (max-height: 720px) {
-  .empty-state-actions {
-    flex-direction: column;
-  }
-
-  .empty-state-actions > button {
-    width: 100%;
-  }
-}
-
-@media (max-width: 390px) {
-  .empty-state-actions {
-    flex-direction: column;
-  }
-
-  .empty-state-actions > button {
-    width: 100%;
-  }
-}
-
-@media (min-width: 1280px) {
-  .discovery-stage {
-    width: min(100%, 27rem, max(16rem, var(--height-fit-width)));
-  }
-}
-
-@media (min-width: 640px) {
-  .discovery-stage {
-    --footer-height: 4.25rem;
-    --page-vertical-padding: 2rem;
-  }
-}
-</style>

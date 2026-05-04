@@ -29,6 +29,26 @@
           </div>
         </div>
 
+        <MyListFilterBarHorizontal
+          v-if="hasMovies"
+          :search-query="searchQuery"
+          :selected-genres="selectedGenres"
+          :selected-runtime="selectedRuntime"
+          :sort-by="sortBy"
+          :available-genres="availableGenres"
+          :runtime-ranges="RUNTIME_RANGES"
+          :has-active-filters="hasActiveFilters"
+          :filtered-count="filteredMovies.length"
+          :total-count="myList.length"
+          :is-loading-metadata="isLoadingMetadata"
+          :metadata-progress="metadataProgress"
+          @update:search-query="searchQuery = $event"
+          @update:selected-runtime="selectedRuntime = $event"
+          @update:sort-by="sortBy = $event"
+          @toggle-genre="toggleGenre"
+          @clear-filters="clearFilters"
+        />
+
         <div
           v-if="!hasMovies"
           class="rounded-[1.75rem] border border-dashed border-[#444748] bg-[#1c1b1b] px-6 py-14 text-center shadow-[0_24px_56px_rgb(0_0_0/0.5)]"
@@ -45,6 +65,22 @@
           </NuxtLink>
         </div>
 
+        <div
+          v-else-if="!hasFilteredMovies"
+          class="rounded-[1.75rem] border border-dashed border-[#444748] bg-[#1c1b1b] px-6 py-14 text-center shadow-[0_24px_56px_rgb(0_0_0/0.5)]"
+        >
+          <p class="text-2xl font-semibold text-white">No movies match these filters</p>
+          <p class="mx-auto mt-3 max-w-md text-sm text-[#c4c7c8]">
+            Widen the search, remove a filter, or reset the bar to bring your full queue back.
+          </p>
+          <button
+            class="mt-8 inline-flex items-center justify-center rounded-full border border-white/10 bg-white px-6 py-3 text-sm font-semibold uppercase tracking-[0.18em] text-black transition-colors hover:bg-zinc-200"
+            @click="clearFilters"
+          >
+            Clear Filters
+          </button>
+        </div>
+
         <TransitionGroup
           v-else
           name="watchlist"
@@ -55,7 +91,7 @@
           @leave="onLeave"
         >
           <MyListMovieCard
-            v-for="(movie, index) in myList"
+            v-for="(movie, index) in filteredMovies"
             :key="movie.tmdbId"
             :movie="movie"
             :data-index="index"
@@ -102,15 +138,36 @@ const UNDO_TIMEOUT_MS = 5000
 const { myList, removeFromMyList, addToMyList } = useMyList()
 const { markAsWatched, removeFromWatched } = useWatchedMovies()
 const { getMovieDetails: fetchMovieDetails } = useMovieDetails()
+const {
+  searchQuery,
+  selectedGenres,
+  selectedRuntime,
+  sortBy,
+  availableGenres,
+  filteredMovies,
+  hasActiveFilters,
+  isLoadingMetadata,
+  metadataProgress,
+  clearFilters,
+  toggleGenre,
+  fetchMissingMetadata,
+  RUNTIME_RANGES,
+} = useMyListFilters(myList)
 
 const selectedMovie = ref<Movie | null>(null)
 const undoAction = ref<{ movie: MyListMovie; type: 'watched' | 'removed' } | null>(null)
 const hasMovies = computed(() => myList.value.length > 0)
+const hasFilteredMovies = computed(() => filteredMovies.value.length > 0)
 const movieCountLabel = computed(() => {
   const count = myList.value.length
   const noun = count === 1 ? 'item' : 'items'
 
-  return `${count} ${noun}`
+  if (!hasActiveFilters.value) {
+    return `${count} ${noun}`
+  }
+
+  const filteredCount = filteredMovies.value.length
+  return `${filteredCount} of ${count} ${noun}`
 })
 
 let undoTimer: ReturnType<typeof setTimeout> | null = null
@@ -213,6 +270,22 @@ const onEnter = (element: Element, done: () => void) => {
 const onLeave = (_element: Element, done: () => void) => {
   done()
 }
+
+onMounted(() => {
+  if (myList.value.length > 0) {
+    fetchMissingMetadata()
+  }
+})
+
+// Refetch detail metadata when new watchlist items arrive so filters stay accurate.
+watch(
+  () => myList.value.length,
+  (newLength, previousLength) => {
+    if (newLength > previousLength) {
+      fetchMissingMetadata()
+    }
+  }
+)
 </script>
 
 <style scoped>

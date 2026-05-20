@@ -147,37 +147,7 @@
 
       <button
         class="btn-press flex h-[clamp(2.7rem,20.4cqw,4.7rem)] w-[clamp(2.7rem,20.4cqw,4.7rem)] items-center justify-center rounded-full text-black transition-all shadow-xl [box-shadow:0_0_0_1px_rgb(255_255_255/0.08),0_10px_24px_rgb(0_0_0/0.22),0_0_22px_rgb(255_255_255/0.08)]"
-        :class="isWatched ? 'bg-zinc-300' : 'bg-white hover:scale-105 hover:bg-zinc-200'"
-        @click.stop="$emit('watched', movie)"
-      >
-        <svg
-          class="h-[clamp(1.05rem,8.25cqw,1.9rem)] w-[clamp(1.05rem,8.25cqw,1.9rem)]"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="1.75"
-            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-          />
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="1.75"
-            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-          />
-        </svg>
-      </button>
-
-      <button
-        class="btn-press flex h-[clamp(2.1rem,16.1cqw,3.7rem)] w-[clamp(2.1rem,16.1cqw,3.7rem)] items-center justify-center rounded-full border transition-all [box-shadow:0_0_0_1px_rgb(255_255_255/0.04),0_8px_18px_rgb(0_0_0/0.18),0_0_18px_rgb(255_255_255/0.05)]"
-        :class="
-          isInMyList
-            ? 'border-white bg-white text-black'
-            : 'border-zinc-800 bg-black text-zinc-500 hover:border-white hover:text-white'
-        "
+        :class="isInMyList ? 'bg-zinc-300' : 'bg-white hover:scale-105 hover:bg-zinc-200'"
         @click.stop="$emit('to-watch', movie)"
       >
         <svg
@@ -198,7 +168,37 @@
             stroke-linecap="round"
             stroke-linejoin="round"
             stroke-width="1.75"
-            d="M12 4v16m8-8H4"
+            d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
+          />
+        </svg>
+      </button>
+
+      <button
+        class="btn-press flex h-[clamp(2.1rem,16.1cqw,3.7rem)] w-[clamp(2.1rem,16.1cqw,3.7rem)] items-center justify-center rounded-full border transition-all [box-shadow:0_0_0_1px_rgb(255_255_255/0.04),0_8px_18px_rgb(0_0_0/0.18),0_0_18px_rgb(255_255_255/0.05)]"
+        :class="
+          isWatched
+            ? 'border-white bg-white text-black'
+            : 'border-zinc-800 bg-black text-zinc-500 hover:border-white hover:text-white'
+        "
+        @click.stop="$emit('watched', movie)"
+      >
+        <svg
+          class="h-[clamp(1.05rem,8.25cqw,1.9rem)] w-[clamp(1.05rem,8.25cqw,1.9rem)]"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="1.75"
+            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+          />
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="1.75"
+            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
           />
         </svg>
       </button>

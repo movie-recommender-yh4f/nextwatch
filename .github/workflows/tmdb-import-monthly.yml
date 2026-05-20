@@ -1,4 +1,4 @@
-name: TMDB import (monthly full refresh)
+name: TMDB import
 
 on:
   schedule:
@@ -9,7 +9,7 @@ jobs:
   run:
     runs-on: ubuntu-latest
     steps:
-      - name: Trigger monthly full-refresh import
+      - name: Trigger TMDB import
         run: |
           curl --fail --show-error --silent \
             -X POST "${APP_BASE_URL}/api/admin/tmdb-import" \

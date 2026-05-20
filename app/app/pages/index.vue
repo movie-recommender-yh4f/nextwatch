@@ -20,7 +20,7 @@
         class="mx-auto flex w-full max-w-md flex-1 flex-col justify-center pt-16 text-center text-zinc-400"
       >
         <p class="mb-2 text-2xl font-semibold text-white">Sign in to get recommendations</p>
-        <p class="mb-8 text-sm uppercase tracking-[0.24em] text-zinc-500">
+        <p class="mb-8 text-[12px] uppercase tracking-[0.24em] text-zinc-500">
           We'll suggest movies based on what you've watched.
         </p>
         <button

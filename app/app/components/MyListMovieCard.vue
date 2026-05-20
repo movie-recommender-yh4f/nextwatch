@@ -1,7 +1,5 @@
 <template>
-  <article
-    class="group flex h-full flex-col gap-3"
-  >
+  <article class="group flex h-full flex-col gap-3">
     <button
       class="relative aspect-[1/1.5] overflow-hidden rounded-[1.625rem] border border-white/[0.08] bg-[#1c1b1b] text-left transition-transform duration-200 hover:scale-[1.02]"
       @click="$emit('open', movie.tmdbId)"
@@ -11,7 +9,9 @@
         :alt="movie.title"
         class="h-full w-full object-cover"
       />
-      <div class="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/10 to-transparent"></div>
+      <div
+        class="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/10 to-transparent"
+      ></div>
     </button>
 
     <div class="space-y-3 px-1">
@@ -25,7 +25,12 @@
         <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-[#c4c7c8]">
           <span>{{ movie.year }}</span>
           <span v-if="ratingLabel" class="inline-flex items-center gap-1">
-            <svg class="h-3.5 w-3.5 text-white" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <svg
+              class="h-[clamp(0.72rem,3.9cqw,0.92rem)] w-[clamp(0.72rem,3.9cqw,0.92rem)] text-amber-400 [filter:drop-shadow(0_1px_1px_rgb(0_0_0/0.45))]"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              aria-hidden="true"
+            >
               <path
                 d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"
               />

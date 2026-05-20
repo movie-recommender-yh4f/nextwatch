@@ -21,28 +21,6 @@
         </button>
       </div>
 
-      <label class="relative block">
-        <span
-          class="pointer-events-none absolute inset-y-0 left-4 flex items-center text-[#8e9192]"
-        >
-          <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="1.75"
-              d="M21 21l-4.35-4.35m1.85-5.15a7 7 0 11-14 0 7 7 0 0114 0z"
-            />
-          </svg>
-        </span>
-        <input
-          :value="searchQuery"
-          type="text"
-          :placeholder="searchPlaceholder"
-          class="h-11 w-full rounded-xl border border-white/[0.08] bg-[#1c1b1b] pl-11 pr-4 text-sm text-white outline-none transition focus:border-white/40"
-          @input="handleSearchInput"
-        />
-      </label>
-
       <section class="space-y-3">
         <h3 class="text-[0.7rem] uppercase tracking-[0.22em] text-[#8e9192]">Genre</h3>
         <div class="flex flex-wrap gap-2">
@@ -85,6 +63,38 @@
         </div>
       </section>
 
+      <section v-if="ratingOptions.length > 0" class="space-y-3">
+        <h3 class="text-[0.7rem] uppercase tracking-[0.22em] text-[#8e9192]">Rating</h3>
+        <div class="space-y-2">
+          <button
+            type="button"
+            class="flex w-full items-center justify-between rounded-xl border px-3 py-2 text-left text-sm transition"
+            :class="minRating === null ? activeRowClass : inactiveRowClass"
+            @click="$emit('update:minRating', null)"
+          >
+            <span>Any rating</span>
+            <span
+              class="h-4 w-4 rounded-sm border"
+              :class="minRating === null ? 'border-white bg-white' : 'border-[#444748]'"
+            ></span>
+          </button>
+          <button
+            v-for="option in ratingOptions"
+            :key="option.value"
+            type="button"
+            class="flex w-full items-center justify-between rounded-xl border px-3 py-2 text-left text-sm transition"
+            :class="minRating === option.value ? activeRowClass : inactiveRowClass"
+            @click="$emit('update:minRating', option.value)"
+          >
+            <span>{{ option.label }}</span>
+            <span
+              class="h-4 w-4 rounded-sm border"
+              :class="minRating === option.value ? 'border-white bg-white' : 'border-[#444748]'"
+            ></span>
+          </button>
+        </div>
+      </section>
+
       <div class="pt-2">
         <button
           type="button"
@@ -101,32 +111,31 @@
 <script setup lang="ts">
 import type { RuntimeRange, SortOption } from '~/composables/useWatchedFilters'
 
-const SEARCH_PLACEHOLDER = 'Search titles...'
 const ACTIVE_CHIP_CLASS = 'border-white bg-white text-black'
 const INACTIVE_CHIP_CLASS = 'border-[#444748] text-[#c4c7c8] hover:border-white/30 hover:text-white'
 const ACTIVE_ROW_CLASS = 'border-white/25 bg-[#18181b] text-white'
 const INACTIVE_ROW_CLASS =
   'border-[#353434] bg-transparent text-[#c4c7c8] hover:border-white/30 hover:text-white'
 
-withDefaults(
-  defineProps<{
-    searchQuery: string
-    selectedGenres: string[]
-    selectedRuntime: RuntimeRange | null
-    sortBy: SortOption
-    availableGenres: string[]
-    runtimeRanges: RuntimeRange[]
-    searchPlaceholder?: string
-  }>(),
-  {
-    searchPlaceholder: SEARCH_PLACEHOLDER,
-  }
-)
+interface RatingOption {
+  label: string
+  value: number
+}
 
-const emit = defineEmits<{
-  'update:searchQuery': [value: string]
+defineProps<{
+  selectedGenres: string[]
+  selectedRuntime: RuntimeRange | null
+  sortBy: SortOption
+  availableGenres: string[]
+  runtimeRanges: RuntimeRange[]
+  minRating: number | null
+  ratingOptions: RatingOption[]
+}>()
+
+defineEmits<{
   'update:selectedRuntime': [value: RuntimeRange | null]
   'update:sortBy': [value: SortOption]
+  'update:minRating': [value: number | null]
   toggleGenre: [genre: string]
   clearFilters: []
   close: []
@@ -136,14 +145,4 @@ const activeChipClass = ACTIVE_CHIP_CLASS
 const inactiveChipClass = INACTIVE_CHIP_CLASS
 const activeRowClass = ACTIVE_ROW_CLASS
 const inactiveRowClass = INACTIVE_ROW_CLASS
-
-const handleSearchInput = (event: Event) => {
-  const input = event.target
-
-  if (!(input instanceof HTMLInputElement)) {
-    return
-  }
-
-  emit('update:searchQuery', input.value)
-}
 </script>

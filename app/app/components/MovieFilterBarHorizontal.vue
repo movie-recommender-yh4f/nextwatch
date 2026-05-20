@@ -45,10 +45,10 @@
 
       <div
         data-movie-filter-dropdown
-        class="flex flex-col gap-2 border border-white/[0.08] bg-[#1c1b1b] p-2.5 max-[449px]:hidden sm:rounded-full sm:p-2.5 lg:flex-row lg:items-center"
-        :class="surfaceRadiusClass"
+        class="flex flex-col gap-2 max-[449px]:hidden lg:flex-row lg:items-center"
+        :class="filterSurfaceClass"
       >
-        <label class="relative min-w-0 flex-1">
+        <label v-if="showSearch" class="relative min-w-0 flex-1">
           <span
             class="pointer-events-none absolute inset-y-0 left-4 flex items-center text-[#8e9192]"
           >
@@ -85,7 +85,7 @@
           </button>
         </label>
 
-        <div class="hidden h-8 w-px bg-white/[0.08] lg:block"></div>
+        <div v-if="showSearch" class="hidden h-8 w-px bg-white/[0.08] lg:block"></div>
 
         <div class="flex flex-wrap items-center gap-2">
           <div class="relative" data-movie-filter-dropdown>
@@ -205,6 +205,55 @@
             </div>
           </div>
 
+          <div v-if="ratingOptions.length > 0" class="relative" data-movie-filter-dropdown>
+            <button
+              type="button"
+              class="inline-flex h-12 items-center gap-2 rounded-full border px-4 text-sm font-medium transition"
+              :class="minRating !== null ? activeChipClass : inactiveChipClass"
+              @click="toggleDropdown('rating')"
+            >
+              <span>{{ minRatingLabel }}</span>
+              <svg
+                class="h-3.5 w-3.5 transition-transform"
+                :class="openDropdown === 'rating' ? 'rotate-180' : ''"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M19 9l-7 7-7-7"
+                />
+              </svg>
+            </button>
+
+            <div
+              v-if="openDropdown === 'rating'"
+              class="absolute left-0 top-[calc(100%+0.5rem)] z-30 w-56 rounded-[1.25rem] border border-[#2a2a2a] bg-[#121212] p-2 shadow-[0_18px_48px_rgb(0_0_0/0.42)]"
+            >
+              <button
+                type="button"
+                class="w-full rounded-xl px-3 py-2 text-left text-sm transition"
+                :class="minRating === null ? selectedRowClass : inactiveRowClass"
+                @click="selectRating(null)"
+              >
+                Any rating
+              </button>
+              <button
+                v-for="option in ratingOptions"
+                :key="option.value"
+                type="button"
+                class="w-full rounded-xl px-3 py-2 text-left text-sm transition"
+                :class="minRating === option.value ? selectedRowClass : inactiveRowClass"
+                @click="selectRating(option.value)"
+              >
+                {{ option.label }}
+              </button>
+            </div>
+          </div>
+
           <div class="relative" data-movie-filter-dropdown>
             <button
               type="button"
@@ -250,7 +299,7 @@
 
       <div v-if="hasVisibleActiveFilters" class="flex items-center gap-2 overflow-x-auto px-1 pb-1">
         <button
-          v-if="searchQuery.trim()"
+          v-if="showSearch && searchQuery.trim()"
           type="button"
           class="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-white/[0.08] bg-[#141313] px-2.5 py-1 text-[0.65rem] font-medium uppercase tracking-[0.14em] text-white transition hover:border-white/30"
           @click="$emit('update:searchQuery', '')"
@@ -291,6 +340,23 @@
           @click="selectRuntime(null)"
         >
           <span>{{ selectedRuntime.label }}</span>
+          <svg class="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M6 18L18 6M6 6l12 12"
+            />
+          </svg>
+        </button>
+
+        <button
+          v-if="minRating !== null"
+          type="button"
+          class="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-white/[0.08] bg-[#141313] px-2.5 py-1 text-[0.65rem] font-medium uppercase tracking-[0.14em] text-white transition hover:border-white/30"
+          @click="selectRating(null)"
+        >
+          <span>{{ minRatingLabel }}</span>
           <svg class="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path
               stroke-linecap="round"
@@ -345,16 +411,16 @@
           <div class="flex max-h-[95dvh] w-full max-w-md flex-col overflow-hidden bg-transparent">
             <div class="overflow-y-auto">
               <MovieFilterBarSideMenu
-                :search-query="searchQuery"
                 :selected-genres="selectedGenres"
                 :selected-runtime="selectedRuntime"
                 :sort-by="sortBy"
                 :available-genres="availableGenres"
                 :runtime-ranges="runtimeRanges"
-                :search-placeholder="searchPlaceholder"
-                @update:search-query="$emit('update:searchQuery', $event)"
+                :min-rating="minRating"
+                :rating-options="ratingOptions"
                 @update:selected-runtime="$emit('update:selectedRuntime', $event)"
                 @update:sort-by="$emit('update:sortBy', $event)"
+                @update:min-rating="$emit('update:minRating', $event)"
                 @toggle-genre="$emit('toggleGenre', $event)"
                 @clear-filters="$emit('clearFilters')"
                 @close="isFilterMenuOpen = false"
@@ -443,7 +509,12 @@ const MOBILE_SORT_INACTIVE_CLASS =
   'border-white/[0.08] bg-[#202020] text-[#c4c7c8] shadow-[0_10px_24px_rgba(0,0,0,0.18)] hover:border-white/30 hover:bg-[#292828] hover:text-white'
 const MOBILE_BREAKPOINT_QUERY = '(max-width: 449px)'
 
-type DropdownName = 'genre' | 'length' | 'sort'
+interface RatingOption {
+  label: string
+  value: number
+}
+
+type DropdownName = 'genre' | 'length' | 'rating' | 'sort'
 
 const props = withDefaults(
   defineProps<{
@@ -461,12 +532,20 @@ const props = withDefaults(
       loaded: number
       total: number
     }
+    showSearch?: boolean
+    minRating?: number | null
+    ratingOptions?: RatingOption[]
+    embedded?: boolean
     searchPlaceholder?: string
     sortLabels?: Record<SortOption, string>
     sortLabelPrefix?: string
     sortModalTitle?: string
   }>(),
   {
+    showSearch: true,
+    minRating: null,
+    ratingOptions: () => [],
+    embedded: false,
     searchPlaceholder: SEARCH_PLACEHOLDER,
     sortLabels: () => MY_LIST_SORT_LABELS,
     sortLabelPrefix: SORT_LABEL_PREFIX,
@@ -478,6 +557,7 @@ const emit = defineEmits<{
   'update:searchQuery': [value: string]
   'update:selectedRuntime': [value: RuntimeRange | null]
   'update:sortBy': [value: SortOption]
+  'update:minRating': [value: number | null]
   toggleGenre: [genre: string]
   clearFilters: []
 }>()
@@ -498,6 +578,14 @@ const mobileActionActiveClass = MOBILE_ACTION_ACTIVE_CLASS
 const mobileActionInactiveClass = MOBILE_ACTION_INACTIVE_CLASS
 const mobileSortActiveClass = MOBILE_SORT_ACTIVE_CLASS
 const mobileSortInactiveClass = MOBILE_SORT_INACTIVE_CLASS
+const showSearch = computed(() => props.showSearch)
+const filterSurfaceClass = computed(() => {
+  if (props.embedded) {
+    return 'bg-transparent p-0'
+  }
+
+  return `border border-white/[0.08] bg-[#1c1b1b] p-2.5 sm:p-2.5 ${surfaceRadiusClass}`
+})
 
 const sortOptions = computed(() => {
   return (Object.keys(props.sortLabels) as SortOption[]).map((value) => ({
@@ -516,24 +604,26 @@ const metadataWidth = computed(() => {
 
 const hasVisibleActiveFilters = computed(() => {
   return (
-    props.searchQuery.trim() !== '' ||
+    (props.showSearch && props.searchQuery.trim() !== '') ||
     props.selectedGenres.length > 0 ||
-    props.selectedRuntime !== null
+    props.selectedRuntime !== null ||
+    props.minRating !== null
   )
 })
 
 const hasFilterSelections = computed(() => {
   return (
-    props.searchQuery.trim() !== '' ||
+    (props.showSearch && props.searchQuery.trim() !== '') ||
     props.selectedGenres.length > 0 ||
-    props.selectedRuntime !== null
+    props.selectedRuntime !== null ||
+    props.minRating !== null
   )
 })
 
 const activeFilterCount = computed(() => {
   let count = 0
 
-  if (props.searchQuery.trim() !== '') {
+  if (props.showSearch && props.searchQuery.trim() !== '') {
     count++
   }
 
@@ -543,7 +633,16 @@ const activeFilterCount = computed(() => {
     count++
   }
 
+  if (props.minRating !== null) {
+    count++
+  }
+
   return count
+})
+
+const minRatingLabel = computed(() => {
+  const selectedOption = props.ratingOptions.find((option) => option.value === props.minRating)
+  return selectedOption?.label ?? 'Rating'
 })
 
 const toggleDropdown = (name: DropdownName) => {
@@ -567,6 +666,11 @@ const selectRuntime = (runtime: RuntimeRange | null) => {
 
 const selectSortOption = (sortOption: SortOption) => {
   emit('update:sortBy', sortOption)
+  openDropdown.value = null
+}
+
+const selectRating = (rating: number | null) => {
+  emit('update:minRating', rating)
   openDropdown.value = null
 }
 

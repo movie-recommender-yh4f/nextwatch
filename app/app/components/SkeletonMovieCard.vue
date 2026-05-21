@@ -2,7 +2,7 @@
   <div :class="rootClasses">
     <div :class="cardWrapperClasses">
       <div
-        class="[container-type:inline-size] flex h-full min-h-0 w-full flex-col justify-center gap-[clamp(0.25rem,3.5cqw,1rem)]"
+        class="[container-type:inline-size] flex min-h-0 max-h-full w-full flex-1 flex-col justify-center gap-[clamp(0.25rem,3.5cqw,1rem)] px-[clamp(0.35rem,1vw,0.85rem)] py-[clamp(0.15rem,0.5vw,0.4rem)] sm:px-[0.35rem] lg:px-0 lg:py-0 max-[760px]:py-[0.1rem] max-[680px]:px-[1rem] max-[680px]:py-0"
       >
         <div class="relative w-full shrink-0 aspect-[1/1.5]">
           <div
@@ -36,15 +36,15 @@
           <div
             class="mb-[clamp(0.08rem,1.1cqw,0.28rem)] flex items-center justify-between gap-3 pb-[clamp(0.04rem,0.45cqw,0.1rem)]"
           >
-            <div class="skeleton-shimmer h-[clamp(1.9rem,11.2cqw,3.7rem)] flex-1 rounded"></div>
+            <div class="skeleton-shimmer h-[clamp(1.05rem,8.25cqw,1.9rem)] flex-1 rounded"></div>
             <div
               class="skeleton-shimmer h-[clamp(0.75rem,4.2cqw,0.98rem)] w-12 shrink-0 rounded"
             ></div>
           </div>
           <div class="flex flex-wrap gap-2">
-            <div class="skeleton-shimmer h-7 w-20 rounded-full"></div>
-            <div class="skeleton-shimmer h-7 w-20 rounded-full"></div>
-            <div class="skeleton-shimmer h-7 w-16 rounded-full"></div>
+            <div class="skeleton-shimmer h-[clamp(1rem,5.6cqw,1.38rem)] w-20 rounded-full"></div>
+            <div class="skeleton-shimmer h-[clamp(1rem,5.6cqw,1.38rem)] w-20 rounded-full"></div>
+            <div class="skeleton-shimmer h-[clamp(1rem,5.6cqw,1.38rem)] w-16 rounded-full"></div>
           </div>
         </div>
 

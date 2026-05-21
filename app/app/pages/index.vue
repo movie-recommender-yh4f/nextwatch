@@ -120,7 +120,7 @@
               class="mx-auto flex h-full min-h-0 w-[min(100%,29rem,max(16rem,var(--height-fit-width)))] max-h-full flex-col justify-center lg:mx-0 lg:w-full lg:max-w-none xl:max-w-none"
             >
               <div
-                class="[container-type:inline-size] flex min-h-0 max-h-full w-full flex-1 flex-col justify-center px-[clamp(0.35rem,1vw,0.85rem)] py-[clamp(0.15rem,0.5vw,0.4rem)] sm:px-[0.35rem] lg:px-0 lg:py-0 max-[420px]:px-[0.25rem] max-[760px]:py-[0.1rem] max-[680px]:py-0"
+                class="[container-type:inline-size] flex min-h-0 max-h-full w-full flex-1 flex-col justify-center px-[clamp(0.35rem,1vw,0.85rem)] py-[clamp(0.15rem,0.5vw,0.4rem)] sm:px-[0.35rem] lg:px-0 lg:py-0 max-[760px]:py-[0.1rem] max-[680px]:px-[0.75rem] max-[680px]:py-0"
               >
                 <div
                   v-if="showInlineRecommendationFailure"

@@ -1,7 +1,79 @@
+html,
+body,
+#__nuxt {
+  min-height: 100%;
+}
+
+html,
+body {
+  background-color: #141313;
+  color: #e5e2e1;
+  font-family: 'Inter', sans-serif;
+}
+
+[class*='text-rose-'],
+[class*='dark:text-rose-'],
+[class*='text-green-'],
+[class*='dark:text-green-'],
+[class*='text-emerald-'],
+[class*='dark:text-emerald-'] {
+  color: #ffffff !important;
+}
+
+[class*='hover:text-rose-']:hover,
+[class*='dark:hover:text-rose-']:hover,
+[class*='hover:text-red-']:hover,
+[class*='dark:hover:text-red-']:hover,
+[class*='hover:text-green-']:hover,
+[class*='dark:hover:text-green-']:hover,
+[class*='hover:text-emerald-']:hover,
+[class*='dark:hover:text-emerald-']:hover {
+  color: #ffffff !important;
+}
+
+[class*='bg-rose-500'],
+[class*='bg-rose-300'],
+[class*='dark:bg-rose-700'],
+[class*='bg-green-500'],
+[class*='dark:bg-green-600'],
+[class*='bg-red-500'],
+[class*='bg-emerald-500'] {
+  background-color: #ffffff !important;
+  border-color: #ffffff !important;
+  color: #141313 !important;
+}
+
+[class*='bg-rose-50'],
+[class*='bg-rose-100'],
+[class*='dark:bg-rose-900'],
+[class*='bg-emerald-50'],
+[class*='dark:bg-emerald-900'],
+[class*='bg-red-50'],
+[class*='dark:bg-red-900'] {
+  background-color: #201f1f !important;
+  color: #e5e2e1 !important;
+}
+
+[class*='border-rose-'],
+[class*='dark:border-rose-'],
+[class*='border-green-'],
+[class*='dark:border-green-'],
+[class*='border-red-'],
+[class*='dark:border-red-'] {
+  border-color: #444748 !important;
+}
+
+[class*='ring-rose-'],
+[class*='focus:ring-rose-'] {
+  --tw-ring-color: #ffffff !important;
+}
+
 /* ===== Page Transitions ===== */
 .page-enter-active,
 .page-leave-active {
-  transition: opacity 250ms ease, transform 250ms ease;
+  transition:
+    opacity 250ms ease,
+    transform 250ms ease;
 }
 .page-enter-from {
   opacity: 0;
@@ -14,10 +86,14 @@
 
 /* ===== Modal (scale + fade) ===== */
 .modal-enter-active {
-  transition: opacity 800ms cubic-bezier(0.16, 1, 0.3, 1), transform 800ms cubic-bezier(0.16, 1, 0.3, 1);
+  transition:
+    opacity 800ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 800ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 .modal-leave-active {
-  transition: opacity 200ms ease, transform 200ms ease;
+  transition:
+    opacity 200ms ease,
+    transform 200ms ease;
 }
 .modal-enter-from {
   opacity: 0;
@@ -40,14 +116,18 @@
 
 /* ===== Card entrance ===== */
 .card-enter-active {
-  transition: opacity 350ms ease, transform 350ms ease;
+  transition:
+    opacity 350ms ease,
+    transform 350ms ease;
 }
 .card-enter-from {
   opacity: 0;
   transform: translateY(16px) scale(0.97);
 }
 .card-leave-active {
-  transition: opacity 200ms ease, transform 200ms ease;
+  transition:
+    opacity 200ms ease,
+    transform 200ms ease;
 }
 .card-leave-to {
   opacity: 0;
@@ -56,7 +136,9 @@
 
 /* ===== Stagger list (TransitionGroup) ===== */
 .list-enter-active {
-  transition: opacity 300ms ease, transform 300ms ease;
+  transition:
+    opacity 300ms ease,
+    transform 300ms ease;
 }
 .list-enter-from {
   opacity: 0;
@@ -71,30 +153,28 @@
 
 /* ===== Skeleton shimmer ===== */
 @keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
 }
 .skeleton-shimmer {
-  background: linear-gradient(90deg,
-    theme('colors.gray.200') 25%,
-    theme('colors.gray.100') 50%,
-    theme('colors.gray.200') 75%
-  );
+  background: linear-gradient(90deg, #201f1f 25%, #2a2a2a 50%, #201f1f 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
 }
 :is(.dark) .skeleton-shimmer {
-  background: linear-gradient(90deg,
-    theme('colors.gray.700') 25%,
-    theme('colors.gray.600') 50%,
-    theme('colors.gray.700') 75%
-  );
+  background: linear-gradient(90deg, #201f1f 25%, #2a2a2a 50%, #201f1f 75%);
   background-size: 200% 100%;
 }
 
 /* ===== Button press micro-interaction ===== */
 .btn-press {
-  transition: transform 150ms ease, opacity 150ms ease;
+  transition:
+    transform 150ms ease,
+    opacity 150ms ease;
 }
 .btn-press:active {
   transform: scale(0.93);
@@ -127,18 +207,32 @@
     transform: translateY(0);
   }
 }
-.auth-field-stagger > *:nth-child(1) { animation: field-in 400ms ease 100ms both; }
-.auth-field-stagger > *:nth-child(2) { animation: field-in 400ms ease 180ms both; }
-.auth-field-stagger > *:nth-child(3) { animation: field-in 400ms ease 260ms both; }
-.auth-field-stagger > *:nth-child(4) { animation: field-in 400ms ease 340ms both; }
-.auth-field-stagger > *:nth-child(5) { animation: field-in 400ms ease 420ms both; }
+.auth-field-stagger > *:nth-child(1) {
+  animation: field-in 400ms ease 100ms both;
+}
+.auth-field-stagger > *:nth-child(2) {
+  animation: field-in 400ms ease 180ms both;
+}
+.auth-field-stagger > *:nth-child(3) {
+  animation: field-in 400ms ease 260ms both;
+}
+.auth-field-stagger > *:nth-child(4) {
+  animation: field-in 400ms ease 340ms both;
+}
+.auth-field-stagger > *:nth-child(5) {
+  animation: field-in 400ms ease 420ms both;
+}
 
 /* Auth view switch */
 .auth-switch-enter-active {
-  transition: opacity 250ms ease, transform 250ms ease;
+  transition:
+    opacity 250ms ease,
+    transform 250ms ease;
 }
 .auth-switch-leave-active {
-  transition: opacity 150ms ease, transform 150ms ease;
+  transition:
+    opacity 150ms ease,
+    transform 150ms ease;
 }
 .auth-switch-enter-from {
   opacity: 0;
@@ -157,12 +251,24 @@
   animation: spin-out 100ms ease;
 }
 @keyframes spin-in {
-  from { transform: rotate(-180deg); opacity: 0; }
-  to { transform: rotate(0); opacity: 1; }
+  from {
+    transform: rotate(-180deg);
+    opacity: 0;
+  }
+  to {
+    transform: rotate(0);
+    opacity: 1;
+  }
 }
 @keyframes spin-out {
-  from { transform: rotate(0); opacity: 1; }
-  to { transform: rotate(180deg); opacity: 0; }
+  from {
+    transform: rotate(0);
+    opacity: 1;
+  }
+  to {
+    transform: rotate(180deg);
+    opacity: 0;
+  }
 }
 
 /* ===== Nav link active indicator ===== */
@@ -172,17 +278,16 @@
 .nav-link::after {
   content: '';
   position: absolute;
-  bottom: -4px;
+  top: -10px;
   left: 50%;
-  width: 0;
-  height: 3px;
-  background: theme('colors.rose.500');
-  border-radius: 9999px;
-  transform: translateX(-50%);
-  transition: width 200ms ease;
+  width: 28px;
+  height: 2px;
+  background: #ffffff;
+  transform: translateX(-50%) scaleX(0);
+  transition: transform 200ms ease;
 }
 .nav-link-active::after {
-  width: 16px;
+  transform: translateX(-50%) scaleX(1);
 }
 
 /* ===== Theme switch (temporary global transition) ===== */
@@ -190,6 +295,9 @@ html.theme-transitioning,
 html.theme-transitioning *:not(.theme-toggle):not(.theme-toggle *),
 html.theme-transitioning *:not(.theme-toggle):not(.theme-toggle *)::before,
 html.theme-transitioning *:not(.theme-toggle):not(.theme-toggle *)::after {
-  transition: background-color 300ms ease, color 300ms ease,
-              border-color 300ms ease, fill 300ms ease !important;
+  transition:
+    background-color 300ms ease,
+    color 300ms ease,
+    border-color 300ms ease,
+    fill 300ms ease !important;
 }

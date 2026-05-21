@@ -8,21 +8,22 @@
         class="nav-link flex min-w-16 flex-1 flex-col items-center justify-center gap-0.5 pt-1 text-[9px] font-medium uppercase tracking-[0.24em] text-zinc-500 transition-colors hover:text-zinc-200 sm:gap-1 sm:pt-2 sm:text-[10px] sm:tracking-[0.28em]"
         exact-active-class="!text-white nav-link-active"
       >
-        <svg class="h-5 w-5 sm:h-6 sm:w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="1.75"
-            d="M12 3l7.5 4.5v9L12 21l-7.5-4.5v-9L12 3z"
-          />
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="1.75"
-            d="M8.5 11.25l2.25 2.25 4.75-4.75"
-          />
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3z" />
+          <path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8L19 15z" />
+          <path d="M5 14l.6 1.6L7 16l-1.4.4L5 18l-.6-1.6L3 16l1.4-.4L5 14z" />
         </svg>
-        <span>Discover</span>
+        <span>For You</span>
       </NuxtLink>
 
       <NuxtLink

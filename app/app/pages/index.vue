@@ -4,13 +4,11 @@
       class="flex h-full flex-col px-4 pb-[var(--footer-clearance,0.85rem)] pt-4 sm:px-6 sm:pt-5 lg:px-8"
     >
       <div v-if="pending" class="flex min-h-0 flex-1 items-center justify-center">
-        <div
-          class="mx-auto flex h-full min-h-0 w-[min(100%,29rem,max(16rem,var(--height-fit-width)))] max-h-full flex-col justify-center [--card-non-poster-height:clamp(9.25rem,19dvh,12rem)] [--fit-safety:clamp(0.85rem,2dvh,1.5rem)] [--footer-clearance:clamp(0.65rem,1.75dvh,1.25rem)] [--footer-height:4rem] [--header-height:4rem] [--height-fit-width:calc((100dvh-var(--header-height)-var(--footer-height)-var(--page-vertical-padding)-var(--footer-clearance)-var(--card-non-poster-height)-var(--fit-safety))/1.5)] [--page-vertical-padding:1.5rem] sm:[--footer-height:4.25rem] sm:[--page-vertical-padding:2rem] xl:w-[min(100%,27rem,max(16rem,var(--height-fit-width)))] max-[760px]:[--card-non-poster-height:clamp(7.85rem,17dvh,9.75rem)] max-[760px]:[--fit-safety:clamp(0.65rem,1.5dvh,1rem)] max-[760px]:[--footer-clearance:clamp(0.5rem,1.4dvh,0.85rem)] max-[680px]:[--card-non-poster-height:clamp(7rem,16dvh,8.65rem)] max-[680px]:[--fit-safety:0.65rem] max-[680px]:[--footer-clearance:0.5rem]"
-        >
+        <div class="mx-auto flex h-full min-h-0 w-full max-w-[82rem] items-center justify-center">
           <div
-            class="[container-type:inline-size] flex min-h-0 max-h-full w-full flex-1 flex-col justify-center px-[clamp(0.35rem,1vw,0.85rem)] py-[clamp(0.15rem,0.5vw,0.4rem)] sm:px-[0.35rem] max-[420px]:px-[0.25rem] max-[760px]:py-[0.1rem] max-[680px]:py-0"
+            class="flex h-full min-h-0 w-full flex-1 flex-col justify-center [--card-non-poster-height:clamp(9.25rem,19dvh,12rem)] [--fit-safety:clamp(0.85rem,2dvh,1.5rem)] [--footer-clearance:clamp(0.65rem,1.75dvh,1.25rem)] [--footer-height:4rem] [--header-height:4rem] [--height-fit-width:calc((100dvh-var(--header-height)-var(--footer-height)-var(--page-vertical-padding)-var(--footer-clearance)-var(--card-non-poster-height)-var(--fit-safety))/1.5)] [--page-vertical-padding:1.5rem] sm:[--footer-height:4.25rem] sm:[--page-vertical-padding:2rem] max-[760px]:[--card-non-poster-height:clamp(7.85rem,17dvh,9.75rem)] max-[760px]:[--fit-safety:clamp(0.65rem,1.5dvh,1rem)] max-[760px]:[--footer-clearance:clamp(0.5rem,1.4dvh,0.85rem)] max-[680px]:[--card-non-poster-height:clamp(7rem,16dvh,8.65rem)] max-[680px]:[--fit-safety:0.65rem] max-[680px]:[--footer-clearance:0.5rem]"
           >
-            <SkeletonMovieCard />
+            <SkeletonMovieCard variant="desktop" />
           </div>
         </div>
       </div>
@@ -113,51 +111,81 @@
 
       <div v-else class="flex min-h-0 flex-1 items-center justify-center">
         <div
-          class="mx-auto flex h-full min-h-0 w-[min(100%,29rem,max(16rem,var(--height-fit-width)))] max-h-full flex-col justify-center [--card-non-poster-height:clamp(9.25rem,19dvh,12rem)] [--fit-safety:clamp(0.85rem,2dvh,1.5rem)] [--footer-clearance:clamp(0.65rem,1.75dvh,1.25rem)] [--footer-height:4rem] [--header-height:4rem] [--height-fit-width:calc((100dvh-var(--header-height)-var(--footer-height)-var(--page-vertical-padding)-var(--footer-clearance)-var(--card-non-poster-height)-var(--fit-safety))/1.5)] [--page-vertical-padding:1.5rem] sm:[--footer-height:4.25rem] sm:[--page-vertical-padding:2rem] xl:w-[min(100%,27rem,max(16rem,var(--height-fit-width)))] max-[760px]:[--card-non-poster-height:clamp(7.85rem,17dvh,9.75rem)] max-[760px]:[--fit-safety:clamp(0.65rem,1.5dvh,1rem)] max-[760px]:[--footer-clearance:clamp(0.5rem,1.4dvh,0.85rem)] max-[680px]:[--card-non-poster-height:clamp(7rem,16dvh,8.65rem)] max-[680px]:[--fit-safety:0.65rem] max-[680px]:[--footer-clearance:0.5rem]"
+          class="mx-auto flex h-full min-h-0 w-full max-w-[82rem] items-center justify-center lg:pl-10 xl:pl-14"
         >
           <div
-            class="[container-type:inline-size] flex min-h-0 max-h-full w-full flex-1 flex-col justify-center px-[clamp(0.35rem,1vw,0.85rem)] py-[clamp(0.15rem,0.5vw,0.4rem)] sm:px-[0.35rem] max-[420px]:px-[0.25rem] max-[760px]:py-[0.1rem] max-[680px]:py-0"
+            class="flex h-full min-h-0 w-full flex-1 flex-col justify-center gap-6 [--card-non-poster-height:clamp(9.25rem,19dvh,12rem)] [--fit-safety:clamp(0.85rem,2dvh,1.5rem)] [--footer-clearance:clamp(0.65rem,1.75dvh,1.25rem)] [--footer-height:4rem] [--header-height:4rem] [--height-fit-width:calc((100dvh-var(--header-height)-var(--footer-height)-var(--page-vertical-padding)-var(--footer-clearance)-var(--card-non-poster-height)-var(--fit-safety))/1.5)] [--page-vertical-padding:1.5rem] sm:[--footer-height:4.25rem] sm:[--page-vertical-padding:2rem] max-[760px]:[--card-non-poster-height:clamp(7.85rem,17dvh,9.75rem)] max-[760px]:[--fit-safety:clamp(0.65rem,1.5dvh,1rem)] max-[760px]:[--footer-clearance:clamp(0.5rem,1.4dvh,0.85rem)] max-[680px]:[--card-non-poster-height:clamp(7rem,16dvh,8.65rem)] max-[680px]:[--fit-safety:0.65rem] max-[680px]:[--footer-clearance:0.5rem] lg:grid lg:grid-cols-[min(24.5rem,max(16rem,var(--height-fit-width)))_minmax(0,1fr)] lg:items-stretch lg:gap-16 xl:grid-cols-[min(25.5rem,max(16rem,var(--height-fit-width)))_minmax(0,1fr)] xl:gap-20"
           >
-            <div v-if="showInlineRecommendationFailure" class="w-full text-center text-zinc-400">
-              <AlertMessage type="error" :message="recommendationFailureMessage" />
+            <div
+              class="mx-auto flex h-full min-h-0 w-[min(100%,29rem,max(16rem,var(--height-fit-width)))] max-h-full flex-col justify-center lg:mx-0 lg:w-full lg:max-w-none xl:max-w-none"
+            >
               <div
-                v-if="showRecommendationFailureActions"
-                class="mt-3 flex items-center justify-center gap-3"
+                class="[container-type:inline-size] flex min-h-0 max-h-full w-full flex-1 flex-col justify-center px-[clamp(0.35rem,1vw,0.85rem)] py-[clamp(0.15rem,0.5vw,0.4rem)] sm:px-[0.35rem] lg:px-0 lg:py-0 max-[760px]:py-[0.1rem] max-[680px]:px-[0.75rem] max-[680px]:py-0"
               >
-                <button
-                  v-if="canLoadPreviousRecommendations"
-                  class="inline-flex items-center gap-2 rounded-full border border-zinc-700 px-4 py-2 text-sm font-semibold text-zinc-200 transition-colors hover:border-white hover:text-white disabled:opacity-50"
-                  :disabled="pending"
-                  @click="loadPreviousRecommendations"
+                <div
+                  v-if="showInlineRecommendationFailure"
+                  class="w-full text-center text-zinc-400"
                 >
-                  Load Previous Recommendations
-                </button>
-                <button
-                  v-if="canRetryRecommendations"
-                  class="inline-flex items-center gap-2 rounded-full bg-white px-3 py-2 text-sm font-semibold text-black transition-colors hover:bg-zinc-200 disabled:opacity-50"
-                  :disabled="pending || retrySecondsLeft > 0"
-                  @click="retryRecommendations"
-                >
-                  {{ retryButtonLabel }}
-                </button>
+                  <AlertMessage type="error" :message="recommendationFailureMessage" />
+                  <div
+                    v-if="showRecommendationFailureActions"
+                    class="mt-3 flex items-center justify-center gap-3"
+                  >
+                    <button
+                      v-if="canLoadPreviousRecommendations"
+                      class="inline-flex items-center gap-2 rounded-full border border-zinc-700 px-4 py-2 text-sm font-semibold text-zinc-200 transition-colors hover:border-white hover:text-white disabled:opacity-50"
+                      :disabled="pending"
+                      @click="loadPreviousRecommendations"
+                    >
+                      Load Previous Recommendations
+                    </button>
+                    <button
+                      v-if="canRetryRecommendations"
+                      class="inline-flex items-center gap-2 rounded-full bg-white px-3 py-2 text-sm font-semibold text-black transition-colors hover:bg-zinc-200 disabled:opacity-50"
+                      :disabled="pending || retrySecondsLeft > 0"
+                      @click="retryRecommendations"
+                    >
+                      {{ retryButtonLabel }}
+                    </button>
+                  </div>
+                </div>
+
+                <div class="min-h-0 w-full flex-1">
+                  <Transition name="card" mode="out-in">
+                    <MovieCard
+                      v-if="currentMovieFormatted"
+                      :key="currentMovieFormatted?.id"
+                      :movie="currentMovieFormatted"
+                      :is-in-my-list="isInMyList"
+                      :is-watched="isWatched"
+                      :poster-stack-count="remainingPosterStackCount"
+                      :details-enabled="!isDesktopDetailsLayout"
+                      @dislike="handleDislike"
+                      @watched="handleLike"
+                      @to-watch="handleAddToList"
+                      @refresh="refreshMovies"
+                    />
+                  </Transition>
+                </div>
               </div>
             </div>
 
-            <div class="min-h-0 w-full flex-1">
-              <Transition name="card" mode="out-in">
-                <MovieCard
-                  v-if="currentMovieFormatted"
-                  :key="currentMovieFormatted?.id"
-                  :movie="currentMovieFormatted"
-                  :is-in-my-list="isInMyList"
-                  :is-watched="isWatched"
-                  :poster-stack-count="remainingPosterStackCount"
-                  @dislike="handleDislike"
-                  @watched="handleLike"
-                  @to-watch="handleAddToList"
-                  @refresh="refreshMovies"
-                />
-              </Transition>
+            <div
+              v-if="showDesktopDetailsPanel"
+              class="hidden min-h-0 lg:flex lg:max-w-[48rem] lg:flex-col lg:py-[clamp(0.15rem,0.5vw,0.4rem)]"
+            >
+              <MovieDetails
+                v-if="currentMovieDetails"
+                :is-open="true"
+                :movie="currentMovieDetails"
+                variant="inline"
+              />
+              <div
+                v-else
+                class="flex h-full min-h-0 items-center justify-center rounded-[1.75rem] border border-zinc-800 bg-zinc-950 px-8 text-center text-zinc-500 shadow-2xl"
+              >
+                Movie details are unavailable for this title.
+              </div>
             </div>
           </div>
         </div>
@@ -187,11 +215,10 @@
 </template>
 
 <script setup>
-// @pmackovic mozda treba da se pomeri u neki composable
-
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
-const DISCOVERY_REFRESH_EVENT = 'discovery:refresh-request'
+const RECOMMENDATION_REFRESH_EVENT = 'recommendation:refresh-request'
+const DESKTOP_DETAILS_BREAKPOINT_QUERY = '(min-width: 1024px)'
 const FETCH_MODE = {
   DEFAULT: 'default',
   GET_NEW: 'getNew',
@@ -215,13 +242,10 @@ const { isAuthenticated, loading: authLoading } = useAuth()
 const { getMovieDetails } = useMovieDetails()
 const supabase = useSupabase()
 
-const movies = useState('discovery-movies', () => [])
-const originalMovies = useState('discovery-original-movies', () => [])
-const hasLoaded = useState('discovery-has-loaded', () => false)
-const hasSuccessfulRecommendationLoad = useState(
-  'discovery-has-successful-recommendation-load',
-  () => false
-)
+const movies = useState('recommendation-movies', () => [])
+const originalMovies = useState('recommendation-original-movies', () => [])
+const hasLoaded = useState('recommendation-has-loaded', () => false)
+const hasSuccessfulRecommendationLoad = useState('has-successful-recommendation-load', () => false)
 const recommendationsPending = ref(true)
 const detailsPending = ref(false)
 const pending = computed(() => recommendationsPending.value || detailsPending.value)
@@ -229,11 +253,13 @@ const showLoginModal = ref(false)
 const recommendationFailure = ref(null)
 const lastFetchMode = ref(FETCH_MODE.DEFAULT)
 const pendingModalMovieId = ref(null)
-const currentMovieDetails = useState('discovery-current-movie-details', () => null)
+const currentMovieDetails = useState('recommendation-current-movie-details', () => null)
 const detailsRequestId = ref(0)
 const retrySecondsLeft = ref(0)
+const isDesktopDetailsLayout = ref(false)
 let retryTimerHandle = null
-let discoveryRefreshHandler = null
+let recommendationRefreshHandler = null
+let desktopDetailsMediaQuery = null
 
 function toRecommendationItems(recommendations) {
   return recommendations.flatMap((recommendation) => {
@@ -347,6 +373,9 @@ function applyRecommendations(recommendations) {
 }
 
 const currentMovie = computed(() => movies.value[0] || null)
+const showDesktopDetailsPanel = computed(
+  () => isDesktopDetailsLayout.value && currentMovieFormatted.value !== null
+)
 const recommendationFailureMessage = computed(
   () => recommendationFailure.value?.statusMessage ?? FALLBACK_RECOMMENDATION_ERROR_MESSAGE
 )
@@ -410,6 +439,10 @@ const isWatched = computed(() => {
   return watchedMovies.value.some((movie) => movie.tmdbId === id)
 })
 
+function syncDesktopDetailsLayout(mediaQuery) {
+  isDesktopDetailsLayout.value = mediaQuery.matches
+}
+
 onMounted(() => {
   const stored = localStorage.getItem(RETRY_COOLDOWN_KEY)
   if (stored) {
@@ -421,18 +454,25 @@ onMounted(() => {
     }
   }
 
-  discoveryRefreshHandler = () => {
+  recommendationRefreshHandler = () => {
     if (pending.value) return
-    resetMovies()
+    refreshMovies()
   }
 
-  window.addEventListener(DISCOVERY_REFRESH_EVENT, discoveryRefreshHandler)
+  desktopDetailsMediaQuery = window.matchMedia(DESKTOP_DETAILS_BREAKPOINT_QUERY)
+  syncDesktopDetailsLayout(desktopDetailsMediaQuery)
+  desktopDetailsMediaQuery.addEventListener('change', syncDesktopDetailsLayout)
+  window.addEventListener(RECOMMENDATION_REFRESH_EVENT, recommendationRefreshHandler)
 })
 
 onUnmounted(() => {
   if (retryTimerHandle !== null) clearInterval(retryTimerHandle)
-  if (discoveryRefreshHandler !== null) {
-    window.removeEventListener(DISCOVERY_REFRESH_EVENT, discoveryRefreshHandler)
+  if (desktopDetailsMediaQuery !== null) {
+    desktopDetailsMediaQuery.removeEventListener('change', syncDesktopDetailsLayout)
+    desktopDetailsMediaQuery = null
+  }
+  if (recommendationRefreshHandler !== null) {
+    window.removeEventListener(RECOMMENDATION_REFRESH_EVENT, recommendationRefreshHandler)
   }
 })
 

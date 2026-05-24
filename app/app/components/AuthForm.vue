@@ -71,7 +71,7 @@
             <LoadingSpinner v-if="isLoading" size="h-5 w-5" color="text-white" />
             <span v-else-if="authView === 'login'">Log In</span>
             <span v-else-if="authView === 'register'">Sign Up</span>
-            <span v-else>Send Reset Link</span>
+            <span v-else>Send Reset Code</span>
           </button>
         </form>
       </Transition>
@@ -163,10 +163,12 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import VueHcaptcha from '@hcaptcha/vue3-hcaptcha'
 
 const { login, signup, resetPassword, signInWithGoogle } = useAuth()
+const route = useRoute()
+const router = useRouter()
 
 const config = useRuntimeConfig()
 const siteKey = config.public.hcaptchaSiteKey
@@ -183,7 +185,6 @@ const errorMessage = ref('')
 const successMessage = ref('')
 const captchaToken = ref(null)
 const captchaWidget = ref(null)
-const EMAIL_ALREADY_REGISTERED_CODE = 'EMAIL_ALREADY_REGISTERED'
 
 const onCaptchaVerify = (token) => {
   captchaToken.value = token
@@ -220,6 +221,16 @@ const switchToLoginForExistingEmail = () => {
   resetCaptcha()
 }
 
+onMounted(() => {
+  if (route.query.auth === 'login') {
+    authView.value = 'login'
+  }
+
+  if (route.query.passwordReset === 'success') {
+    successMessage.value = 'Password updated. Please log in with your new password.'
+  }
+})
+
 const submitAuth = async () => {
   errorMessage.value = ''
   successMessage.value = ''
@@ -247,7 +258,7 @@ const submitAuth = async () => {
         username.value.trim(),
         captchaToken.value ?? undefined
       )
-      if (error?.code === EMAIL_ALREADY_REGISTERED_CODE) {
+      if (error?.code === 'EMAIL_ALREADY_REGISTERED') {
         switchToLoginForExistingEmail()
         return
       }
@@ -257,8 +268,14 @@ const submitAuth = async () => {
     } else if (authView.value === 'forgot') {
       const { error } = await resetPassword(email.value)
       if (error) throw error
-      successMessage.value = 'Password reset link sent! Check your email.'
-      setTimeout(() => switchView('login'), 3000)
+      successMessage.value = 'Password reset code sent! Check your email.'
+      await router.push({
+        path: '/reset-password',
+        query: {
+          mode: 'otp',
+          email: email.value,
+        },
+      })
     }
   } catch (error) {
     errorMessage.value = error.message || 'Something went wrong.'

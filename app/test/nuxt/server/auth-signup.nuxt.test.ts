@@ -4,12 +4,19 @@ import type { Server } from 'node:http'
 import { createApp, createError, defineEventHandler, readBody, toNodeListener } from 'h3'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 
-const { createClientMock, createServiceSupabaseClientMock, serviceRpcMock, signUpMock } =
+const {
+  createClientMock,
+  createServiceSupabaseClientMock,
+  serviceRpcMock,
+  signUpMock,
+  verifyHcaptchaMock,
+} =
   vi.hoisted(() => ({
     createClientMock: vi.fn(),
     createServiceSupabaseClientMock: vi.fn(),
     serviceRpcMock: vi.fn(),
     signUpMock: vi.fn(),
+    verifyHcaptchaMock: vi.fn(),
   }))
 
 vi.mock('@supabase/supabase-js', () => ({
@@ -20,14 +27,20 @@ vi.mock('../../../server/utils/auth', () => ({
   createServiceSupabaseClient: createServiceSupabaseClientMock,
 }))
 
+vi.mock('../../../server/utils/verifyHcaptcha', () => ({
+  verifyHcaptcha: verifyHcaptchaMock,
+}))
+
 Object.assign(globalThis, {
   createError,
   defineEventHandler,
   readBody,
   useRuntimeConfig: vi.fn(() => ({
+    hcaptchaSecretKey: 'test-hcaptcha-secret',
     public: {
       supabaseUrl: 'https://example.supabase.co',
       supabaseKey: 'test-supabase-key',
+      hcaptchaSiteKey: 'test-hcaptcha-key',
     },
   })),
 })
@@ -96,6 +109,7 @@ describe('/api/auth/signup', () => {
       },
       error: null,
     })
+    verifyHcaptchaMock.mockResolvedValue({ success: true })
     createServiceSupabaseClientMock.mockReturnValue({
       rpc: serviceRpcMock,
     })

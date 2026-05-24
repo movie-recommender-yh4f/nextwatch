@@ -162,10 +162,30 @@ export const useAuth = () => {
     }
   }
 
-  const updatePassword = async (newPassword: string) => {
+  const verifyPasswordResetOtp = async (email: string, token: string) => {
+    try {
+      const { data, error } = await supabase.auth.verifyOtp({
+        email,
+        token,
+        type: 'recovery',
+      })
+
+      if (error) throw error
+
+      user.value = data.user
+      session.value = data.session
+
+      return { user: data.user, session: data.session }
+    } catch (error) {
+      return { user: null, session: null, error: error as AuthError }
+    }
+  }
+
+  const updatePassword = async (newPassword: string, currentPassword?: string) => {
     try {
       const { data, error } = await supabase.auth.updateUser({
         password: newPassword,
+        ...(currentPassword ? { current_password: currentPassword } : {}),
       })
       if (error) throw error
       return { user: data.user }
@@ -234,6 +254,7 @@ export const useAuth = () => {
     logout,
     signInWithGoogle,
     resetPassword,
+    verifyPasswordResetOtp,
     updatePassword,
   }
 }

@@ -42,7 +42,7 @@
 
     <div class="mb-4 grid grid-cols-1 gap-3 md:grid-cols-2">
       <button
-        class="group flex min-h-14 items-center justify-between rounded-card border border-zinc-200 bg-white px-4 py-3 text-left shadow-sm transition-colors hover:border-zinc-950 dark:border-zinc-800 dark:bg-zinc-950/80 dark:hover:border-white"
+        class="group flex min-h-14 items-center justify-between rounded-[1.25rem] border border-zinc-200 bg-white px-4 py-3 text-left shadow-sm transition-colors hover:border-zinc-950 dark:border-zinc-800 dark:bg-zinc-950/80 dark:hover:border-white"
         @click="startEditing"
       >
         <span class="flex items-center gap-3">
@@ -67,7 +67,7 @@
       </button>
 
       <button
-        class="group flex min-h-14 items-center justify-between rounded-card border border-zinc-200 bg-white px-4 py-3 text-left shadow-sm transition-colors hover:border-zinc-950 dark:border-zinc-800 dark:bg-zinc-950/80 dark:hover:border-white"
+        class="group flex min-h-14 items-center justify-between rounded-[1.25rem] border border-zinc-200 bg-white px-4 py-3 text-left shadow-sm transition-colors hover:border-zinc-950 dark:border-zinc-800 dark:bg-zinc-950/80 dark:hover:border-white"
         @click="openPasswordModal"
       >
         <span class="flex items-center gap-3">
@@ -93,7 +93,7 @@
     </div>
 
     <section
-      class="mb-8 rounded-card border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950/80 dark:shadow-glow"
+      class="mb-8 rounded-[1.25rem] border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950/80 dark:shadow-glow"
     >
       <div class="mb-5 flex items-start justify-between gap-4">
         <div>
@@ -140,7 +140,7 @@
       </h2>
 
       <div
-        class="overflow-hidden rounded-card border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-950/80"
+        class="overflow-hidden rounded-[1.25rem] border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-950/80"
       >
         <div
           class="flex min-h-14 items-center justify-between border-b border-zinc-200 px-4 py-3 dark:border-zinc-800"
@@ -209,12 +209,12 @@
         </div>
 
         <button
-          class="group flex min-h-14 w-full items-center justify-between px-4 py-3 text-left transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-900"
+          class="group flex min-h-14 w-full items-center justify-between px-4 py-3 text-left transition-colors hover:bg-red-50 dark:hover:bg-red-950/20"
           @click="handleLogout"
         >
           <span class="flex items-center gap-3">
             <span
-              class="flex h-8 w-8 items-center justify-center rounded-full border border-zinc-200 text-zinc-500 transition-colors group-hover:border-zinc-950 group-hover:text-zinc-950 dark:border-zinc-800 dark:group-hover:border-white dark:group-hover:text-white"
+              class="flex h-8 w-8 items-center justify-center rounded-full border border-red-200 text-red-500 transition-colors group-hover:border-red-500 group-hover:text-red-600 dark:border-red-900 dark:text-red-400 dark:group-hover:border-red-300 dark:group-hover:text-red-300"
             >
               <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
@@ -225,7 +225,7 @@
                 />
               </svg>
             </span>
-            <span class="font-semibold text-zinc-950 dark:text-white">Log Out</span>
+            <span class="font-semibold text-red-600 dark:text-red-400">Log Out</span>
           </span>
         </button>
       </div>
@@ -240,7 +240,7 @@
         @click.self="closePasswordModal"
       >
         <div
-          class="flex w-full max-w-md flex-col gap-4 rounded-card border border-zinc-200 bg-white p-6 shadow-xl dark:border-zinc-800 dark:bg-zinc-950 dark:shadow-glow"
+          class="flex w-full max-w-md flex-col gap-4 rounded-[1.25rem] border border-zinc-200 bg-white p-6 shadow-xl dark:border-zinc-800 dark:bg-zinc-950 dark:shadow-glow"
         >
           <div class="flex items-start justify-between gap-4">
             <div>

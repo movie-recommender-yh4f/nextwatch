@@ -20,6 +20,7 @@ const LOAD_RECOMMENDATIONS_MESSAGE = 'Unable to load recommendations right now.'
 const GENERATE_RECOMMENDATIONS_MESSAGE = 'Unable to generate recommendations right now.'
 const UNKNOWN_YEAR_LABEL = 'unknown year'
 const HIGH_BLOCKED_GUIDANCE_THRESHOLD = 0.5
+const EXCLUDED_RECOMMENDATION_INDEX = 0
 
 const SYSTEM_PROMPT = `You are a movie recommendation engine.
 Analyze the user's taste profile from their watch history: preferred genres, directors, eras, themes, and tone.
@@ -812,6 +813,18 @@ function toBlockedTitleKey(recommendation: BlockedRecommendation): string {
   return `${normalizeTitleForComparison(recommendation.title)}::${formatRecommendationYear(recommendation.release_year)}`
 }
 
+function toBlockedExcludedRecommendations(
+  recommendations: RecommendationWithId[]
+): BlockedRecommendation[] {
+  return recommendations.map((recommendation) => ({
+    index: EXCLUDED_RECOMMENDATION_INDEX,
+    title: recommendation.name,
+    release_year: recommendation.year,
+    tmdb_id: recommendation.tmdbId,
+    reason: 'already_blocked',
+  }))
+}
+
 export function createRecommendationValidationState(
   watchedMovies: WatchedMovieRecord[],
   myListMovies: WatchedMovieRecord[],
@@ -1124,6 +1137,7 @@ export async function getRecommendationsFromPlatformAi(
   excludedMovies: RecommendationWithId[] = []
 ): Promise<{
   recommendations: RecommendationWithId[]
+  aiCandidateCount: number
   tmdbFallbackCount: number
   systemPrompt: string
   userMessage: string
@@ -1140,9 +1154,14 @@ export async function getRecommendationsFromPlatformAi(
       content: userMessage,
     },
   ]
-  const validationState = createRecommendationValidationState(watchedMovies, myListMovies)
+  const validationState = createRecommendationValidationState(
+    watchedMovies,
+    myListMovies,
+    toBlockedExcludedRecommendations(excludedMovies)
+  )
   const acceptedRecommendations: IndexedRecommendationWithId[] = []
   let tmdbFallbackCount = 0
+  let aiCandidateCount = 0
 
   const raw = await askPlatformAi({
     systemPrompt,
@@ -1159,6 +1178,7 @@ export async function getRecommendationsFromPlatformAi(
   })
 
   const parsed = parseInitialRecommendationResponse(raw, userId, event)
+  aiCandidateCount += parsed.length
   const initialResult = await resolveInitialRecommendations(parsed, event)
   tmdbFallbackCount += initialResult.tmdbFallbackCount
 
@@ -1201,6 +1221,7 @@ export async function getRecommendationsFromPlatformAi(
     })
 
     const replacements = parseReplacementRecommendationResponse(replacementRaw, userId, event)
+    aiCandidateCount += replacements.length
     const replacementResult = await resolveReplacementRecommendations(replacements, event)
     tmdbFallbackCount += replacementResult.tmdbFallbackCount
     validationResult = validateRecommendationBatch(
@@ -1212,6 +1233,7 @@ export async function getRecommendationsFromPlatformAi(
 
   return {
     recommendations: acceptedRecommendations.slice(0, TARGET_RECOMMENDATIONS),
+    aiCandidateCount,
     tmdbFallbackCount,
     systemPrompt,
     userMessage,

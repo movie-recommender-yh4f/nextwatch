@@ -366,7 +366,10 @@ export default defineEventHandler(async (event) => {
         userId: user.id,
         route: event.path,
         method: event.method,
-        extra: { ...filteredResult.stats },
+        extra: {
+          ...filteredResult.stats,
+          aiCandidateCount: platformAiResult.aiCandidateCount ?? generatedRecommendations.length,
+        },
       })
 
       if (

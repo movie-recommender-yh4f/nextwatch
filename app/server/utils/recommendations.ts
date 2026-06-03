@@ -11,7 +11,7 @@ export const MY_LIST_TABLE = 'user_my_list'
 const MOVIES_TABLE = 'movies'
 export const MIN_RECOMMENDATIONS_TO_CACHE = 5
 export const TARGET_RECOMMENDATIONS = 20
-export const AI_CANDIDATE_RECOMMENDATIONS = 50
+export const AI_CANDIDATE_RECOMMENDATIONS = 200
 const LOAD_RECOMMENDATIONS_MESSAGE = 'Unable to load recommendations right now.'
 const GENERATE_RECOMMENDATIONS_MESSAGE = 'Unable to generate recommendations right now.'
 

@@ -28,6 +28,10 @@ export async function getAuthorizedUser(event: H3Event): Promise<AuthorizedUser>
 
   const supabase = createClient(supabaseUrl, supabaseKey, {
     global: { headers: { Authorization: `Bearer ${token}` } },
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+    },
   })
 
   const {

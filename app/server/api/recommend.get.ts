@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto'
 import type { H3Event } from 'h3'
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { getAuthorizedUser } from '../utils/auth'
+import { getAuthorizedUser } from '../utils/auth/authorize-user'
 import {
   fetchMyListMovies,
   fetchWatchedMovies,
@@ -11,11 +11,14 @@ import {
   MAX_MY_LIST_RECOMMENDATIONS,
   MIN_RECOMMENDATIONS_TO_CACHE,
   TARGET_RECOMMENDATIONS,
-} from '../utils/recommendations'
-import type { RecommendationWithId, WatchedMovieRecord } from '../utils/recommendations'
-import { acquireRecommendationLock, releaseRecommendationLock } from '../utils/recommendation-lock'
-import { createRedisClient } from '../utils/redis'
-import { logPrivateError, logPrivateInfo, throwSupabaseError } from '../utils/api-error'
+} from '../utils/recommendations/recommendations'
+import type {
+  RecommendationWithId,
+  WatchedMovieRecord,
+} from '../utils/recommendations/recommendations'
+import { acquireRecommendationLock, releaseRecommendationLock } from '../utils/recommendations/lock'
+import { createRedisClient } from '../utils/shared/redis'
+import { logPrivateError, logPrivateInfo, throwSupabaseError } from '../utils/shared/api-error'
 
 const RECOMMENDATIONS_TABLE = 'recommendations'
 const TTL_MS = 7 * 24 * 60 * 60 * 1000

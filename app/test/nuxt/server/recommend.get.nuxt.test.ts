@@ -42,11 +42,11 @@ const {
   logPrivateInfoMock: vi.fn(),
 }))
 
-vi.mock('../../../server/utils/auth', () => ({
+vi.mock('../../../server/utils/auth/authorize-user', () => ({
   getAuthorizedUser: getAuthorizedUserMock,
 }))
 
-vi.mock('../../../server/utils/recommendations', () => ({
+vi.mock('../../../server/utils/recommendations/recommendations', () => ({
   fetchMyListMovies: fetchMyListMoviesMock,
   fetchWatchedMovies: fetchWatchedMoviesMock,
   getRecommendationsFromPlatformAi: getRecommendationsFromPlatformAiMock,
@@ -64,17 +64,17 @@ vi.mock('../../../server/utils/recommendations', () => ({
     recommendations.filter((recommendation) => recommendation.tmdbId !== null).length >= 5,
 }))
 
-vi.mock('../../../server/utils/recommendation-lock', () => ({
+vi.mock('../../../server/utils/recommendations/lock', () => ({
   acquireRecommendationLock: acquireRecommendationLockMock,
   releaseRecommendationLock: releaseRecommendationLockMock,
 }))
 
-vi.mock('../../../server/utils/redis', () => ({
+vi.mock('../../../server/utils/shared/redis', () => ({
   createRedisClient: () => ({}),
 }))
 
-vi.mock('../../../server/utils/api-error', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../../server/utils/api-error')>()
+vi.mock('../../../server/utils/shared/api-error', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../server/utils/shared/api-error')>()
 
   return {
     ...actual,

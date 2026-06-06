@@ -13,7 +13,7 @@ const { fetchTmdbMock } = vi.hoisted(() => ({
   fetchTmdbMock: vi.fn(),
 }))
 
-vi.mock('../../server/utils/tmdb', () => ({
+vi.mock('../../../server/utils/tmdb/client', () => ({
   fetchTmdb: fetchTmdbMock,
 }))
 
@@ -21,7 +21,7 @@ const { askPlatformAiMock } = vi.hoisted(() => ({
   askPlatformAiMock: vi.fn(),
 }))
 
-vi.mock('../../server/utils/ai-client', () => ({
+vi.mock('../../../server/utils/recommendations/ai-client', () => ({
   askPlatformAi: askPlatformAiMock,
 }))
 
@@ -34,7 +34,7 @@ const {
   INITIAL_RECOMMENDATION_COUNT,
   MAX_MY_LIST_RECOMMENDATIONS,
   validateRecommendationBatch,
-} = await import('../../server/utils/recommendations')
+} = await import('../../../server/utils/recommendations/recommendations')
 
 interface SearchRow {
   tmdb_id: number

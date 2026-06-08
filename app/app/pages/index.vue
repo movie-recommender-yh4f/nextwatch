@@ -4,13 +4,7 @@
       class="flex h-full flex-col px-4 pb-[var(--footer-clearance,0.85rem)] pt-4 sm:px-6 sm:pt-5 lg:px-8"
     >
       <div v-if="pending" class="flex min-h-0 flex-1 items-center justify-center">
-        <div class="mx-auto flex h-full min-h-0 w-full max-w-[82rem] items-center justify-center">
-          <div
-            class="flex h-full min-h-0 w-full flex-1 flex-col justify-center [--card-non-poster-height:clamp(9.25rem,19dvh,12rem)] [--fit-safety:clamp(0.85rem,2dvh,1.5rem)] [--footer-clearance:clamp(0.65rem,1.75dvh,1.25rem)] [--footer-height:4rem] [--header-height:4rem] [--height-fit-width:calc((100dvh-var(--header-height)-var(--footer-height)-var(--page-vertical-padding)-var(--footer-clearance)-var(--card-non-poster-height)-var(--fit-safety))/1.5)] [--page-vertical-padding:1.5rem] sm:[--footer-height:4.25rem] sm:[--page-vertical-padding:2rem] max-[760px]:[--card-non-poster-height:clamp(7.85rem,17dvh,9.75rem)] max-[760px]:[--fit-safety:clamp(0.65rem,1.5dvh,1rem)] max-[760px]:[--footer-clearance:clamp(0.5rem,1.4dvh,0.85rem)] max-[680px]:[--card-non-poster-height:clamp(7rem,16dvh,8.65rem)] max-[680px]:[--fit-safety:0.65rem] max-[680px]:[--footer-clearance:0.5rem]"
-          >
-            <SkeletonMovieCard variant="desktop" />
-          </div>
-        </div>
+        <FilmReelLoader />
       </div>
 
       <div

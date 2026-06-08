@@ -187,24 +187,6 @@
     </div>
 
     <LoginPromptModal :is-open="showLoginModal" @close="handleModalClose" />
-
-    <Transition name="fade">
-      <div
-        v-if="undoAction"
-        class="fixed left-1/2 top-6 z-50 flex max-w-sm -translate-x-1/2 items-center gap-3 rounded-full border border-outline-variant bg-surface-container-lowest px-5 py-3 text-on-surface shadow-glow"
-      >
-        <span class="truncate text-sm">
-          <strong>{{ undoAction.movie.title }}</strong>
-          {{ undoAction.type === 'watched' ? 'marked as watched' : 'added to watchlist' }}
-        </span>
-        <button
-          class="whitespace-nowrap text-sm font-semibold text-on-surface transition-colors hover:text-on-surface-variant"
-          @click="handleUndo"
-        >
-          Undo
-        </button>
-      </div>
-    </Transition>
   </div>
 </template>
 
@@ -227,12 +209,11 @@ const MAX_POSTER_STACK_CARDS = 2
 const {
   watchedMovies,
   markAsWatched,
-  removeFromWatched,
   queuePendingWatchedMovie,
   removePendingWatchedMovie,
 } = useWatchedMovies()
-const { myList, addToMyList, removeFromMyList } = useMyList()
-const { isAuthenticated, loading: authLoading } = useAuth()
+const { myList, addToMyList } = useMyList()
+const { isAuthenticated, loading: authLoading, session } = useAuth()
 const { getMovieDetails } = useMovieDetails()
 const supabase = useSupabase()
 
@@ -254,6 +235,7 @@ const isDesktopDetailsLayout = ref(false)
 let retryTimerHandle = null
 let recommendationRefreshHandler = null
 let desktopDetailsMediaQuery = null
+let isFetching = false
 
 function toRecommendationItems(recommendations) {
   return recommendations.flatMap((recommendation) => {
@@ -506,15 +488,24 @@ watch(
 )
 
 const fetchRecommendations = async (mode = FETCH_MODE.DEFAULT) => {
+  if (isFetching) return
+  isFetching = true
   recommendationsPending.value = true
   recommendationFailure.value = null
   lastFetchMode.value = mode
+
+  // Only flip hasLoaded once a fetch actually ran. A missing session token (the
+  // client is still restoring/refreshing it) must stay "unloaded" so the session
+  // watcher retries when the token arrives, instead of stranding an empty feed
+  // that only a manual refresh can recover.
+  let didAttempt = false
 
   try {
     const {
       data: { session },
     } = await supabase.auth.getSession()
     if (!session?.access_token) return
+    didAttempt = true
 
     const params =
       mode === FETCH_MODE.GET_NEW
@@ -545,9 +536,11 @@ const fetchRecommendations = async (mode = FETCH_MODE.DEFAULT) => {
     clearRetryCooldown()
     applyRecommendations(response.recommendations)
   } catch (error) {
+    didAttempt = true
     setRecommendationFailure(createRecommendationFailureFromError(error))
   } finally {
-    hasLoaded.value = true
+    isFetching = false
+    if (didAttempt) hasLoaded.value = true
     recommendationsPending.value = false
   }
 }
@@ -575,9 +568,12 @@ const resetMovies = () => {
 
 // wait for auth to finish initializing before deciding whether to fetch.
 // onMounted fires before initialize() resolves, so isAuthenticated is not yet reliable there.
+// Also watch the access token: if it wasn't ready on the first attempt (e.g. the
+// client was still restoring the session), this re-fires once it lands so the feed
+// loads on its own rather than waiting for a manual refresh.
 watch(
-  authLoading,
-  (isLoading) => {
+  [authLoading, () => session.value?.access_token],
+  ([isLoading]) => {
     if (isLoading) return
     if (!isAuthenticated.value) {
       recommendationsPending.value = false
@@ -621,8 +617,6 @@ const handleLike = async () => {
     const status = await markAsWatched(movieToSave)
     if (status === 'unauthorized' || status === 'error') {
       queuePendingWatchedMovie(movieToSave)
-    } else {
-      showUndo(movieToSave, 'watched')
     }
   } else {
     queuePendingWatchedMovie(movieToSave)
@@ -642,44 +636,10 @@ const handleAddToList = async () => {
   const movieToSave = buildMovieToSave(rawMovie, details)
 
   if (isAuthenticated.value) {
-    const status = await addToMyList(movieToSave)
-    if (status === 'ok') {
-      showUndo(movieToSave, 'my-list')
-    }
+    await addToMyList(movieToSave)
   } else {
     showLoginModal.value = true
   }
-}
-
-const undoAction = ref(null)
-let undoTimer = null
-
-const dismissUndo = () => {
-  if (undoTimer) clearTimeout(undoTimer)
-  undoTimer = null
-  undoAction.value = null
-}
-
-const showUndo = (movie, type) => {
-  dismissUndo()
-  undoAction.value = { movie, type }
-  undoTimer = setTimeout(dismissUndo, 5000)
-}
-
-const handleUndo = async () => {
-  const action = undoAction.value
-  if (!action) return
-  dismissUndo()
-
-  if (action.type === 'watched') {
-    await removeFromWatched(action.movie.id)
-  } else {
-    await removeFromMyList(action.movie.id)
-  }
-
-  movies.value.unshift({
-    tmdbId: action.movie.id,
-  })
 }
 
 const handleModalClose = () => {

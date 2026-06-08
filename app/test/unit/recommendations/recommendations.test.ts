@@ -36,6 +36,9 @@ const {
   createRecommendationValidationState,
   validateRecommendationBatch,
 } = await import('../../../server/utils/recommendations/recommendation-validation')
+const { parseInitialRecommendationResponse } = await import(
+  '../../../server/utils/recommendations/response-parser'
+)
 const { getRecommendationsFromPlatformAi } = await import(
   '../../../server/utils/recommendations/recommendations'
 )
@@ -409,6 +412,47 @@ describe('validateRecommendationBatch', () => {
       },
     ])
     expect(MAX_MY_LIST_RECOMMENDATIONS).toBe(2)
+  })
+})
+
+describe('parseInitialRecommendationResponse', () => {
+  beforeEach(() => {
+    Object.assign(globalThis, {
+      createError,
+    })
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('logs the provided response and expected schema when provider JSON cannot be parsed', () => {
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    const providedResponse = '{\n  "recommendations": [],\n}'
+
+    expect(() => parseInitialRecommendationResponse(providedResponse)).toThrow(
+      'Unable to generate recommendations right now.'
+    )
+
+    const loggedMessage = consoleErrorSpy.mock.calls[0]?.[0]
+
+    if (typeof loggedMessage !== 'string') {
+      throw new Error('Expected recommendation parse failure to log a JSON string')
+    }
+
+    expect(JSON.parse(loggedMessage) as unknown).toMatchObject({
+      event: 'recommendation.ai_provider_parse_failed',
+      extra: {
+        providedResponse,
+        providedResponseLength: providedResponse.length,
+        providedResponseTruncated: false,
+        expectedResponseSchemaName: 'movie_recommendations',
+        expectedResponseSchema: {
+          type: 'object',
+          required: ['recommendations'],
+        },
+      },
+    })
   })
 })
 

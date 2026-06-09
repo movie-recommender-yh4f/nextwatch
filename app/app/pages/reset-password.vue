@@ -170,11 +170,25 @@ const verifyOtpCode = async () => {
 }
 
 const validatePasswords = () => {
-  if (newPassword.value.length < 6) {
+  const password = newPassword.value
+
+  if (password.length < 6) {
     throw new Error('Password must be at least 6 characters')
   }
 
-  if (newPassword.value !== confirmPassword.value) {
+  if (!/[a-z]/.test(password)) {
+    throw new Error('Password must include a lowercase letter')
+  }
+
+  if (!/[A-Z]/.test(password)) {
+    throw new Error('Password must include an uppercase letter')
+  }
+
+  if (!/[0-9]/.test(password)) {
+    throw new Error('Password must include a number')
+  }
+
+  if (password !== confirmPassword.value) {
     throw new Error('Passwords do not match')
   }
 }

@@ -16,6 +16,11 @@ export default defineNuxtConfig({
     pageTransition: { name: 'page', mode: 'out-in' },
     head: {
       title: 'NextWatch',
+      link: [
+        { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
+        { rel: 'apple-touch-icon', href: '/pwa-icon.svg' },
+        { rel: 'manifest', href: '/manifest.webmanifest' },
+      ],
       script: [
         {
           innerHTML: createThemeBootstrapScript(),

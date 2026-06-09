@@ -12,6 +12,7 @@
           <input
             v-model="newName"
             type="text"
+            :maxlength="MAX_NAME_LENGTH"
             class="min-w-0 flex-1 rounded-full border border-zinc-300 bg-white px-4 py-2 text-center text-lg font-bold text-zinc-950 outline-none transition-colors focus:border-zinc-950 dark:border-zinc-700 dark:bg-black dark:text-white dark:focus:border-white"
             placeholder="Enter new name..."
             @keyup.enter="saveName"
@@ -331,6 +332,7 @@ const CURRENT_PASSWORD_ERROR_PATTERNS = [
   'invalid credentials',
 ]
 const MIN_PASSWORD_LENGTH = 6
+const MAX_NAME_LENGTH = 25
 const activeThemeClass = 'bg-zinc-950 text-white dark:bg-white dark:text-black'
 const inactiveThemeClass = 'text-zinc-500 hover:text-zinc-950 dark:hover:text-white'
 const comingSoonSettings = [
@@ -385,13 +387,15 @@ const cancelEdit = () => {
 }
 
 const saveName = async () => {
-  if (!newName.value.trim()) return
+  const trimmedName = newName.value.trim()
+
+  if (!trimmedName) return
 
   isSavingName.value = true
 
   try {
     const { data, error } = await supabase.auth.updateUser({
-      data: { full_name: newName.value.trim() },
+      data: { full_name: trimmedName.slice(0, MAX_NAME_LENGTH) },
     })
 
     if (error) throw error
@@ -451,6 +455,18 @@ const validatePasswords = () => {
 
   if (newPassword.value.length < MIN_PASSWORD_LENGTH) {
     throw new Error('Password must be at least 6 characters')
+  }
+
+  if (!/[a-z]/.test(newPassword.value)) {
+    throw new Error('Password must include a lowercase letter')
+  }
+
+  if (!/[A-Z]/.test(newPassword.value)) {
+    throw new Error('Password must include an uppercase letter')
+  }
+
+  if (!/[0-9]/.test(newPassword.value)) {
+    throw new Error('Password must include a number')
   }
 
   if (newPassword.value !== confirmPassword.value) {

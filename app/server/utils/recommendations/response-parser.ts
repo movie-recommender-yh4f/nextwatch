@@ -5,7 +5,10 @@ import type {
   Recommendation,
   ReplacementModelRecommendation,
 } from './types'
+import { RECOMMENDATION_RESPONSE_SCHEMA, REPLACEMENT_RESPONSE_SCHEMA } from './prompts'
 import { logPrivateError, throwAiProviderError } from '../shared/api-error'
+
+const AI_RESPONSE_LOG_PREVIEW_LENGTH = 8000
 
 interface RecommendationObjectResponse {
   recommendations: unknown
@@ -14,9 +17,14 @@ interface RecommendationObjectResponse {
 function throwPlatformAiRecommendationError(
   cause: unknown,
   logEvent: string,
-  context: { event?: H3Event; userId?: string; statusCode: number }
+  context: {
+    event?: H3Event
+    userId?: string
+    statusCode: number
+    extra?: Record<string, unknown>
+  }
 ): never {
-  const { event, userId, statusCode } = context
+  const { event, userId, statusCode, extra } = context
 
   if (event) {
     throwAiProviderError(event, cause, {
@@ -24,6 +32,7 @@ function throwPlatformAiRecommendationError(
       userId,
       publicMessage: GENERATE_RECOMMENDATIONS_MESSAGE,
       statusCode,
+      extra,
     })
   }
 
@@ -33,6 +42,7 @@ function throwPlatformAiRecommendationError(
     source: 'ai_provider',
     statusCode,
     userId,
+    extra,
   })
 
   throw createError({
@@ -118,7 +128,27 @@ function normalizeRecommendationPayload(value: unknown): unknown {
   return value
 }
 
-function parseJsonRecommendationResponse(raw: string, userId?: string, event?: H3Event): unknown {
+function createParseFailureLogExtra(
+  raw: string,
+  responseSchema: Record<string, unknown>,
+  responseSchemaName: string
+): Record<string, unknown> {
+  return {
+    providedResponse: raw.slice(0, AI_RESPONSE_LOG_PREVIEW_LENGTH),
+    providedResponseLength: raw.length,
+    providedResponseTruncated: raw.length > AI_RESPONSE_LOG_PREVIEW_LENGTH,
+    expectedResponseSchemaName: responseSchemaName,
+    expectedResponseSchema: responseSchema,
+  }
+}
+
+function parseJsonRecommendationResponse(
+  raw: string,
+  responseSchema: Record<string, unknown>,
+  responseSchemaName: string,
+  userId?: string,
+  event?: H3Event
+): unknown {
   let parsed: unknown
 
   try {
@@ -128,6 +158,7 @@ function parseJsonRecommendationResponse(raw: string, userId?: string, event?: H
       event,
       userId,
       statusCode: 502,
+      extra: createParseFailureLogExtra(raw, responseSchema, responseSchemaName),
     })
   }
 
@@ -151,7 +182,13 @@ export function parseInitialRecommendationResponse(
   userId?: string,
   event?: H3Event
 ): InitialModelRecommendation[] {
-  const normalized = parseJsonRecommendationResponse(raw, userId, event)
+  const normalized = parseJsonRecommendationResponse(
+    raw,
+    RECOMMENDATION_RESPONSE_SCHEMA,
+    'movie_recommendations',
+    userId,
+    event
+  )
 
   if (!isInitialModelRecommendationArray(normalized)) {
     throwRecommendationSchemaError(userId, event)
@@ -165,7 +202,13 @@ export function parseReplacementRecommendationResponse(
   userId?: string,
   event?: H3Event
 ): ReplacementModelRecommendation[] {
-  const normalized = parseJsonRecommendationResponse(raw, userId, event)
+  const normalized = parseJsonRecommendationResponse(
+    raw,
+    REPLACEMENT_RESPONSE_SCHEMA,
+    'movie_recommendation_replacements',
+    userId,
+    event
+  )
 
   if (!isReplacementModelRecommendationArray(normalized)) {
     throwRecommendationSchemaError(userId, event)

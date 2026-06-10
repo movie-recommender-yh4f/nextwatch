@@ -268,7 +268,7 @@ const submitAuth = async () => {
     } else if (authView.value === 'forgot') {
       const { error } = await resetPassword(email.value)
       if (error) throw error
-      successMessage.value = 'Password reset code sent! Check your email.'
+      successMessage.value = 'If an account exists for this email, a reset code is on its way.'
       await router.push({
         path: '/reset-password',
         query: {

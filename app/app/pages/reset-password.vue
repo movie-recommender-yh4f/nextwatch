@@ -35,6 +35,11 @@
             </span>
           </div>
 
+          <p class="text-center text-xs text-on-surface-variant">
+            If an account exists for this email, we've sent a verification code to it.
+            Enter it below to continue.
+          </p>
+
           <input
             v-model="otpCode"
             type="text"
@@ -170,11 +175,25 @@ const verifyOtpCode = async () => {
 }
 
 const validatePasswords = () => {
-  if (newPassword.value.length < 6) {
+  const password = newPassword.value
+
+  if (password.length < 6) {
     throw new Error('Password must be at least 6 characters')
   }
 
-  if (newPassword.value !== confirmPassword.value) {
+  if (!/[a-z]/.test(password)) {
+    throw new Error('Password must include a lowercase letter')
+  }
+
+  if (!/[A-Z]/.test(password)) {
+    throw new Error('Password must include an uppercase letter')
+  }
+
+  if (!/[0-9]/.test(password)) {
+    throw new Error('Password must include a number')
+  }
+
+  if (password !== confirmPassword.value) {
     throw new Error('Passwords do not match')
   }
 }

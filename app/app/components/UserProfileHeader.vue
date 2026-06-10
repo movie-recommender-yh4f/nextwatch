@@ -12,6 +12,7 @@
           <input
             v-model="newName"
             type="text"
+            :maxlength="MAX_NAME_LENGTH"
             class="min-w-0 flex-1 rounded-full border border-zinc-300 bg-white px-4 py-2 text-center text-lg font-bold text-zinc-950 outline-none transition-colors focus:border-zinc-950 dark:border-zinc-700 dark:bg-black dark:text-white dark:focus:border-white"
             placeholder="Enter new name..."
             @keyup.enter="saveName"
@@ -181,6 +182,32 @@
           </span>
         </div>
 
+        <button
+          v-if="showInstallOption"
+          class="group flex min-h-14 w-full items-center justify-between border-b border-zinc-200 px-4 py-3 text-left transition-colors hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-900/40"
+          @click="install"
+        >
+          <span class="flex items-center gap-3">
+            <span
+              class="flex h-8 w-8 items-center justify-center rounded-full border border-zinc-200 text-zinc-500 transition-colors group-hover:border-zinc-950 group-hover:text-zinc-950 dark:border-zinc-800 dark:group-hover:border-white dark:group-hover:text-white"
+            >
+              <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="1.75"
+                  d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14"
+                />
+              </svg>
+            </span>
+            <span class="font-semibold text-zinc-950 dark:text-white">Install App</span>
+          </span>
+          <span
+            class="text-zinc-400 transition-colors group-hover:text-zinc-950 dark:text-zinc-600 dark:group-hover:text-white"
+            >&rarr;</span
+          >
+        </button>
+
         <div
           v-for="setting in comingSoonSettings"
           :key="setting.label"
@@ -308,6 +335,89 @@
       </div>
     </Transition>
   </Teleport>
+
+  <Teleport to="body">
+    <Transition name="fade">
+      <div
+        v-if="showIosModal"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
+        @click.self="showIosModal = false"
+      >
+        <div
+          class="flex w-full max-w-md flex-col gap-4 rounded-[1.25rem] border border-zinc-200 bg-white p-6 shadow-xl dark:border-zinc-800 dark:bg-zinc-950 dark:shadow-glow"
+        >
+          <div class="flex items-start justify-between gap-4">
+            <div>
+              <h3 class="text-2xl font-black tracking-[-0.04em] text-zinc-950 dark:text-white">
+                Install on iPhone
+              </h3>
+              <p class="mt-1 text-sm text-zinc-500">Add NextWatch to your Home Screen.</p>
+            </div>
+            <button
+              class="text-zinc-500 transition-colors hover:text-zinc-950 dark:hover:text-white"
+              @click="showIosModal = false"
+            >
+              <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="1.75"
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+          </div>
+
+          <ol class="flex flex-col gap-3 text-sm text-zinc-700 dark:text-zinc-300">
+            <li class="flex items-center gap-3">
+              <span
+                class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-zinc-950 text-xs font-black text-white dark:bg-white dark:text-black"
+                >1</span
+              >
+              <span class="flex items-center gap-1.5">
+                Tap the
+                <svg
+                  class="inline h-5 w-5 text-zinc-950 dark:text-white"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="1.75"
+                    d="M12 16V4m0 0L8 8m4-4l4 4M6 12v6a2 2 0 002 2h8a2 2 0 002-2v-6"
+                  />
+                </svg>
+                Share button.
+              </span>
+            </li>
+            <li class="flex items-center gap-3">
+              <span
+                class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-zinc-950 text-xs font-black text-white dark:bg-white dark:text-black"
+                >2</span
+              >
+              <span>Scroll and tap <strong>Add to Home Screen</strong>.</span>
+            </li>
+            <li class="flex items-center gap-3">
+              <span
+                class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-zinc-950 text-xs font-black text-white dark:bg-white dark:text-black"
+                >3</span
+              >
+              <span>Tap <strong>Add</strong> in the top corner.</span>
+            </li>
+          </ol>
+
+          <button
+            class="btn-press mt-2 flex h-12 w-full items-center justify-center rounded-full bg-zinc-950 px-6 py-3 font-bold text-white transition-colors hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
+            @click="showIosModal = false"
+          >
+            Got it
+          </button>
+        </div>
+      </div>
+    </Transition>
+  </Teleport>
 </template>
 
 <script setup>
@@ -322,6 +432,7 @@ const mode = useColorMode({
   storageKey: THEME_STORAGE_KEY,
 })
 const { quota, pending: quotaPending, error: quotaError, fetchQuota } = useRecommendationQuota()
+const { showInstallOption, showIosModal, install } = usePwaInstall()
 
 const CURRENT_PASSWORD_ERROR_PATTERNS = [
   'current password',
@@ -331,6 +442,7 @@ const CURRENT_PASSWORD_ERROR_PATTERNS = [
   'invalid credentials',
 ]
 const MIN_PASSWORD_LENGTH = 6
+const MAX_NAME_LENGTH = 25
 const activeThemeClass = 'bg-zinc-950 text-white dark:bg-white dark:text-black'
 const inactiveThemeClass = 'text-zinc-500 hover:text-zinc-950 dark:hover:text-white'
 const comingSoonSettings = [
@@ -385,13 +497,15 @@ const cancelEdit = () => {
 }
 
 const saveName = async () => {
-  if (!newName.value.trim()) return
+  const trimmedName = newName.value.trim()
+
+  if (!trimmedName) return
 
   isSavingName.value = true
 
   try {
     const { data, error } = await supabase.auth.updateUser({
-      data: { full_name: newName.value.trim() },
+      data: { full_name: trimmedName.slice(0, MAX_NAME_LENGTH) },
     })
 
     if (error) throw error
@@ -451,6 +565,18 @@ const validatePasswords = () => {
 
   if (newPassword.value.length < MIN_PASSWORD_LENGTH) {
     throw new Error('Password must be at least 6 characters')
+  }
+
+  if (!/[a-z]/.test(newPassword.value)) {
+    throw new Error('Password must include a lowercase letter')
+  }
+
+  if (!/[A-Z]/.test(newPassword.value)) {
+    throw new Error('Password must include an uppercase letter')
+  }
+
+  if (!/[0-9]/.test(newPassword.value)) {
+    throw new Error('Password must include a number')
   }
 
   if (newPassword.value !== confirmPassword.value) {

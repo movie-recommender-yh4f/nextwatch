@@ -147,9 +147,7 @@ export const useAuth = () => {
       session.value = null
       clearWatchedMovies()
       clearMyList()
-    } catch {
-      // Logout cleanup is local best-effort.
-    }
+    } catch {}
   }
 
   const resetPassword = async (email: string) => {

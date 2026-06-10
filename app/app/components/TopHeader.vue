@@ -1,13 +1,23 @@
 <template>
-  <header class="z-50 border-b border-outline-variant bg-surface-container-lowest/95 backdrop-blur">
+  <header class="z-50 border-b border-outline-variant bg-surface-container-lowest/95 backdrop-blur pt-[env(safe-area-inset-top)]">
     <div
       class="mx-auto flex h-16 w-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8"
     >
-      <NuxtLink
-        to="/"
-        class="text-2xl font-black uppercase tracking-[0.35em] text-on-surface transition-colors hover:text-on-surface-variant"
-      >
-        NEXT
+      <NuxtLink to="/" class="inline-flex items-center transition-opacity hover:opacity-80">
+        <img
+          src="/lockup-black.png"
+          alt="NextWatch"
+          class="block h-[18px] w-auto dark:hidden"
+          width="375"
+          height="172"
+        />
+        <img
+          src="/lockup-white.png"
+          alt="NextWatch"
+          class="hidden h-[18px] w-auto dark:block"
+          width="375"
+          height="172"
+        />
       </NuxtLink>
 
       <div class="flex items-center gap-2">

@@ -35,6 +35,11 @@
             </span>
           </div>
 
+          <p class="text-center text-xs text-on-surface-variant">
+            If an account exists for this email, we've sent a verification code to it.
+            Enter it below to continue.
+          </p>
+
           <input
             v-model="otpCode"
             type="text"

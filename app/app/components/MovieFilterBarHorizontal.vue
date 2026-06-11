@@ -483,8 +483,8 @@
 </template>
 
 <script setup lang="ts">
-import type { RuntimeRange, SortOption } from '~/composables/useWatchedFilters'
-import { MY_LIST_SORT_LABELS } from '~/composables/useMyListFilters'
+import type { RuntimeRange, SortOption } from '~/composables/useFilters'
+import { MY_LIST_SORT_LABELS } from '~/composables/useFilters'
 
 const DEFAULT_SORT: SortOption = 'default'
 const SEARCH_PLACEHOLDER = 'Search your watchlist...'

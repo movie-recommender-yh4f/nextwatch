@@ -28,7 +28,7 @@
           :selected-runtime="selectedRuntime"
           :sort-by="sortBy"
           :available-genres="availableGenres"
-          :runtime-ranges="RUNTIME_RANGES"
+          :runtime-ranges="runtimeRanges"
           :has-active-filters="hasActiveFilters"
           :filtered-count="filteredMovies.length"
           :total-count="watchedMovies.length"
@@ -73,26 +73,29 @@
           </button>
         </div>
 
-        <TransitionGroup
+        <div
           v-else
-          tag="div"
-          class="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-2 md:grid-cols-3 md:gap-x-6 md:gap-y-10 lg:grid-cols-4 xl:grid-cols-5"
-          move-class="transition-transform duration-[280ms] ease-in-out"
-          leave-active-class="absolute transition duration-[280ms] ease-in-out"
-          leave-to-class="scale-[0.96] opacity-0"
-          @before-enter="onBeforeEnter"
-          @enter="onEnter"
-          @leave="onLeave"
+          v-bind="containerProps"
+          class="min-h-[24rem] overflow-y-auto"
+          style="height: 70vh"
         >
-          <WatchedMovieCard
-            v-for="(movie, index) in displayMovies"
-            :key="movie.tmdbId"
-            :movie="movie"
-            :data-index="index"
-            @open="openDetails"
-            @remove="handleRemove"
-          />
-        </TransitionGroup>
+          <div v-bind="wrapperProps">
+            <div
+              v-for="row in virtualRows"
+              :key="row.data.key"
+              class="grid gap-x-4 gap-y-8 md:gap-x-6 md:gap-y-10"
+              :style="{ gridTemplateColumns: `repeat(${columnCount}, minmax(0, 1fr))` }"
+            >
+              <WatchedMovieCard
+                v-for="movie in row.data.items"
+                :key="movie.tmdbId"
+                :movie="movie"
+                @open="openDetails"
+                @remove="handleRemove"
+              />
+            </div>
+          </div>
+        </div>
       </section>
     </div>
 
@@ -109,11 +112,13 @@
 
 <script setup lang="ts">
 import type { Movie, WatchedMovie } from '~/types/movie'
-import { WATCHED_SORT_LABELS } from '~/composables/useWatchedFilters'
+import { WATCHED_SORT_LABELS } from '~/composables/useFilters'
 
 const SEARCH_PLACEHOLDER = 'Search watched movies...'
 const SORT_MODAL_TITLE = 'Sort watched movies'
 const UNDO_TIMEOUT_MS = 5000
+const WATCHED_ROW_HEIGHT = 420
+const DEFAULT_METADATA_PROGRESS = { loaded: 0, total: 0 }
 
 const { watchedMovies, removeFromWatched, markAsWatched } = useWatchedMovies()
 const { getMovieDetails: fetchMovieDetails } = useMovieDetails()
@@ -125,27 +130,19 @@ const {
   sortBy,
   availableGenres,
   filteredMovies,
-  getGenres,
-  getRuntime,
   hasActiveFilters,
-  isLoadingMetadata,
-  metadataProgress,
   clearFilters,
   toggleGenre,
-  fetchMissingMetadata,
-  RUNTIME_RANGES,
-} = useWatchedFilters(watchedMovies)
+  runtimeRanges,
+} = useFilters(watchedMovies)
 
 const selectedMovie = ref<Movie | null>(null)
 const undoAction = ref<{ movie: WatchedMovie } | null>(null)
 const hasMovies = computed(() => watchedMovies.value.length > 0)
 const hasFilteredMovies = computed(() => filteredMovies.value.length > 0)
-const displayMovies = computed(() => {
-  return filteredMovies.value.map((movie) => ({
-    ...movie,
-    genres: getGenres(movie),
-    runtime: getRuntime(movie),
-  }))
+const { columnCount, virtualRows, containerProps, wrapperProps } = useVirtualGrid(filteredMovies, {
+  getKey: (movie) => movie.tmdbId,
+  rowHeight: WATCHED_ROW_HEIGHT,
 })
 const movieCountLabel = computed(() => {
   const count = watchedMovies.value.length
@@ -162,6 +159,8 @@ const undoSnackbar = computed(() =>
     ? { title: undoAction.value.movie.title, message: 'removed from watched' }
     : null
 )
+const isLoadingMetadata = computed(() => false)
+const metadataProgress = computed(() => DEFAULT_METADATA_PROGRESS)
 
 let undoTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -210,41 +209,4 @@ const openDetails = async (tmdbId: number) => {
     selectedMovie.value = await fetchMovieDetails(tmdbId)
   } catch {}
 }
-
-const onBeforeEnter = (element: Element) => {
-  const htmlElement = element as HTMLElement
-  htmlElement.style.opacity = '0'
-  htmlElement.style.transform = 'translateY(24px)'
-}
-
-const onEnter = (element: Element, done: () => void) => {
-  const htmlElement = element as HTMLElement
-  const delay = Math.min(Number(htmlElement.dataset.index ?? 0) * 45, 360)
-
-  htmlElement.style.transition = `opacity 280ms ease ${delay}ms, transform 280ms ease ${delay}ms`
-  void htmlElement.offsetHeight
-  htmlElement.style.opacity = '1'
-  htmlElement.style.transform = 'translateY(0)'
-
-  setTimeout(done, 280 + delay)
-}
-
-const onLeave = (_element: Element, done: () => void) => {
-  done()
-}
-
-onMounted(() => {
-  if (watchedMovies.value.length > 0) {
-    fetchMissingMetadata()
-  }
-})
-
-watch(
-  () => watchedMovies.value.length,
-  (newLength, previousLength) => {
-    if (newLength > previousLength) {
-      fetchMissingMetadata()
-    }
-  }
-)
 </script>

@@ -111,7 +111,7 @@
 </template>
 
 <script setup lang="ts">
-import type { RuntimeRange, SortOption } from '~/composables/useWatchedFilters'
+import type { RuntimeRange, SortOption } from '~/composables/useFilters'
 
 const ACTIVE_CHIP_CLASS = 'border-primary/10 bg-primary text-on-primary'
 const INACTIVE_CHIP_CLASS =

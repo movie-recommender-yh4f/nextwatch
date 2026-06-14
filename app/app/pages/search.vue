@@ -168,6 +168,7 @@
     />
 
     <LoginPromptModal :is-open="showLoginModal" @close="handleModalClose" />
+    <ScrollToTopButton :target="containerProps.ref" />
   </div>
 </template>
 

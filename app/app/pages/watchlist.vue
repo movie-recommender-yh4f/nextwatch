@@ -97,6 +97,7 @@
     />
 
     <UndoSnackbar :action="undoSnackbar" @undo="handleUndo" />
+    <ScrollToTopButton :target="containerProps.ref" />
   </div>
 </template>
 

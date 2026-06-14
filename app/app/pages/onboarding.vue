@@ -165,6 +165,7 @@
       :show-my-list-button="false"
       @close="closeDetails"
     />
+    <ScrollToTopButton :target="containerProps.ref" />
   </div>
 </template>
 

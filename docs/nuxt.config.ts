@@ -35,4 +35,8 @@ export default defineNuxtConfig({
       ],
     },
   },
+  assistant: {
+    floatingInput: false,
+    explainWithAi: false,
+  },
 });

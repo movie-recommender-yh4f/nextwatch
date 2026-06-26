@@ -3,6 +3,11 @@ export default defineNuxtConfig({
     "@nuxt/content",
     process.env.NODE_ENV === "development" ? "nuxt-studio" : [],
   ].filter(Boolean),
+  routeRules: {
+    '/**': {
+      ogImage: false,
+    },
+  },
   studio: {
     route: "/_studio",
   },

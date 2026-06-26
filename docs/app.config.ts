@@ -9,4 +9,12 @@ export default defineAppConfig({
       },
     },
   },
+  docus: {
+    header: {
+      logo: {
+        src: "/favicon.svg",
+        alt: "NextWatch Docs",
+      },
+    },
+  },
 });

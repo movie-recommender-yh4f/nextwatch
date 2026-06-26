@@ -1,15 +1,15 @@
 ---
 seo:
-  title: Movie Recommender - Developer Docs
-  description: Technical documentation for the current Movie Recommender codebase.
+  title: NextWatch - Developer Docs
+  description: Technical documentation for the current NextWatch codebase.
 ---
 
 ::u-page-hero
 #title
-Movie Recommender
+NextWatch
 
 #description
-Developer documentation for the current Movie Recommender codebase.
+Documentation for the current NextWatch codebase.
 
 #links
   :::u-button
@@ -27,7 +27,7 @@ Developer documentation for the current Movie Recommender codebase.
   color: neutral
   icon: simple-icons-github
   size: xl
-  to: https://github.com/movie-recommender-yh4f/movie-recommender/
+  to: https://github.com/anp-studio/nextwatch
   variant: outline
   ---
   Star on GitHub

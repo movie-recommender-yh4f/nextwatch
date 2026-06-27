@@ -30,7 +30,7 @@ NextWatch combines imported TMDB movie data with authenticated user state:
 - Recommendation generation builds a taste profile from watched movies and My List
 - The server calls one or more configured AI providers through `app/server/utils/recommendations/ai-client.ts`
 - Returned candidates are resolved back to TMDB IDs, validated server-side, and cached in Supabase
-- Movie detail lookups and search are served through hardened server routes instead of exposing upstream keys to the browser
+- Movie detail lookups and search are served through hardened server routes instead of exposing upstream keys to the browser, with Redis-backed miss budgets and negative caching on public detail fetches
 
 ## Stack
 
@@ -39,7 +39,7 @@ NextWatch combines imported TMDB movie data with authenticated user state:
 - Supabase for auth and application data
 - TMDB for movie discovery and metadata import
 - OpenAI-compatible AI provider integrations
-- Upstash Redis for rate limiting
+- Upstash Redis for rate limiting and movie-detail negative caching
 - hCaptcha for signup protection
 - Vitest and Nuxt test utilities for tests
 - Docus for the docs site
@@ -144,7 +144,7 @@ The current server routes live under `app/server/api/`.
 | `POST /api/onboarding/complete` | Bearer token | Seed watched movies and mark onboarding complete |
 | `GET /api/movies/search` | None | Search movies |
 | `GET /api/movies/popular` | None | Return a cached popular-movies feed |
-| `GET /api/movies/:id` | None | Return cached movie details or fetch and cache them |
+| `GET /api/movies/:id` | None | Return cached movie details, negative-cache TMDB 404s in Redis, and charge miss budgets only on uncached upstream fetches |
 | `POST /api/movies/metadata` | Bearer token | Hydrate TMDB IDs into lightweight movie cards |
 | `GET \| POST \| DELETE /api/watched` | Bearer token | Read and update watched history |
 | `GET \| POST \| DELETE /api/mylist` | Bearer token | Read and update My List |
@@ -200,6 +200,8 @@ The app currently uses Upstash-backed rate limiting for:
 - TMDB-backed requests
 - Recommendation generation
 - Authenticated movie metadata hydration
+
+`GET /api/movies/:id` also uses Upstash Redis for a 24-hour negative cache of TMDB 404 responses. Positive Supabase cache hits and Redis negative-cache hits stay free, while anonymous uncached misses require the `x-vercel-forwarded-for` header before the durable miss budget is charged.
 
 These limiters live under `app/server/utils/` and are applied server-side before sensitive or high-volume operations.
 

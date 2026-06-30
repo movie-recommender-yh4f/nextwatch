@@ -16,8 +16,10 @@ Recommend exactly ${candidateCount} candidate movies, obeying these rules:
 2. WATCHLIST (My List): The user already knows about these movies and has deliberately saved them. Prefer undiscovered movies; the server will keep at most ${MAX_MY_LIST_RECOMMENDATIONS} My List matches.
 3. Aim for variety across genres and decades while staying true to the inferred taste profile.
 4. Return movie titles in their original release language and script exactly as TMDB original_title. Do not transliterate, anglicize, or use localized variants (e.g. ゴジラ-1.0 not Godzilla Minus One).
-5. Every item must include a stable "index" inside the response, "title", and "release_year" when known or null when unknown.
-6. Respond ONLY with structured recommendations. No explanation, no markdown, no code fences.`
+5. Each recommendation must be a tuple: [title, release_year], using null when the year is unknown.
+6. Return ONLY valid JSON. No markdown. No explanations. No comments. No trailing text.
+7. Return exactly ${candidateCount} recommendations.
+8. Use this exact format: {"recommendations":[["Movie title",2012],["Another movie",null]]}`
 }
 
 const EXACT_ORIGINAL_TITLE_PROMPT_SUFFIX = `
@@ -40,23 +42,13 @@ export const RECOMMENDATION_RESPONSE_SCHEMA = {
     recommendations: {
       type: 'array',
       items: {
-        type: 'object',
-        additionalProperties: false,
-        properties: {
-          index: {
-            type: 'integer',
-            description: 'Stable item index inside this response',
-          },
-          title: {
-            type: 'string',
-            description: 'Movie title in original release language/script',
-          },
-          release_year: {
-            anyOf: [{ type: 'integer' }, { type: 'null' }],
-            description: 'Release year when known, otherwise null',
-          },
-        },
-        required: ['index', 'title', 'release_year'],
+        type: 'array',
+        prefixItems: [
+          { type: 'string', description: 'Movie title in original release language/script' },
+          { anyOf: [{ type: 'integer' }, { type: 'null' }] },
+        ],
+        minItems: 2,
+        maxItems: 2,
       },
     },
   },
@@ -70,23 +62,13 @@ export const REPLACEMENT_RESPONSE_SCHEMA = {
     recommendations: {
       type: 'array',
       items: {
-        type: 'object',
-        additionalProperties: false,
-        properties: {
-          replaced_index: {
-            type: 'integer',
-            description: 'Blocked index from the previous assistant response this item replaces',
-          },
-          title: {
-            type: 'string',
-            description: 'Movie title in original release language/script',
-          },
-          release_year: {
-            anyOf: [{ type: 'integer' }, { type: 'null' }],
-            description: 'Release year when known, otherwise null',
-          },
-        },
-        required: ['replaced_index', 'title', 'release_year'],
+        type: 'array',
+        prefixItems: [
+          { type: 'string', description: 'Movie title in original release language/script' },
+          { anyOf: [{ type: 'integer' }, { type: 'null' }] },
+        ],
+        minItems: 2,
+        maxItems: 2,
       },
     },
   },
@@ -159,7 +141,10 @@ MY LIST REMINDERS:
 ${formatPromptMovies(tasteProfile.myListReminderMovies, false)}
 ${excludedSection}
 Recommend exactly ${candidateCount} candidate movies I would enjoy. These are candidates, not final output: the server will remove watched movies, recently recommended movies, unresolved titles, duplicates, and excess My List matches before keeping up to ${TARGET_RECOMMENDATIONS} final recommendations. At most ${MAX_MY_LIST_RECOMMENDATIONS} final recommendations may come from My List.
-Prefer undiscovered movies over My List reminders.`
+Prefer undiscovered movies over My List reminders.
+Return ONLY valid JSON. No markdown. No explanations. No comments. No trailing text.
+Return exactly ${candidateCount} recommendations.
+Use this exact format: {"recommendations":[["Movie title",2012],["Another movie",null]]}`
 }
 
 export function buildReplacementUserMessage(
@@ -181,5 +166,8 @@ new_replacements_needed: ${replacementsNeeded}
 You already know which titles those indexes refer to from your previous assistant response.
 Generate only ${replacementsNeeded} replacement recommendations for blocked indexes.
 Do not repeat accepted or blocked recommendations from earlier rounds.
-Each item must include replaced_index, title, and release_year.${deeperCutGuidance}`
+Map tuple positions to blocked_indexes in the same order.
+Return ONLY valid JSON. No markdown. No explanations. No comments. No trailing text.
+Return exactly ${replacementsNeeded} recommendations.
+Use this exact format: {"recommendations":[["Movie title",2012],["Another movie",null]]}${deeperCutGuidance}`
 }

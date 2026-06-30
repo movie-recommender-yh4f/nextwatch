@@ -1,8 +1,9 @@
 import type { H3Event } from 'h3'
-import { askPlatformAi, askPlatformAiResponse } from './ai-client'
+import { askPlatformAiResponse } from './ai-client'
 import type { PlatformAiMessage, PlatformAiResponse } from './ai-client'
 import {
   INITIAL_RECOMMENDATION_RETRY_COUNT,
+  INITIAL_RECOMMENDATION_COUNT,
   MAX_RECOMMENDATION_ROUNDS,
   TARGET_RECOMMENDATIONS,
 } from './constants'
@@ -54,9 +55,11 @@ interface InitialRecommendationRequest {
 
 function toResponseMetadata(response: PlatformAiResponse) {
   return {
+    finishReason: response.finishReason,
     provider: response.provider,
     model: response.model,
     responseMode: response.responseMode,
+    usage: response.usage,
   }
 }
 
@@ -70,46 +73,6 @@ function getErrorMessage(error: unknown): string {
   }
 
   return 'Unknown recommendation error'
-}
-
-function mergeRecoveredRecommendations(
-  ...recommendationLists: InitialModelRecommendation[][]
-): InitialModelRecommendation[] {
-  const mergedRecommendations: InitialModelRecommendation[] = []
-  const seenRecommendations = new Set<string>()
-
-  for (const recommendations of recommendationLists) {
-    for (const recommendation of recommendations) {
-      const recommendationKey = `${recommendation.index}:${recommendation.title}:${recommendation.release_year ?? 'null'}`
-
-      if (seenRecommendations.has(recommendationKey)) {
-        continue
-      }
-
-      seenRecommendations.add(recommendationKey)
-      mergedRecommendations.push(recommendation)
-    }
-  }
-
-  return mergedRecommendations
-}
-
-function safelyRecoverInitialRecommendations(
-  raw: string,
-  response: PlatformAiResponse,
-  userId?: string,
-  event?: H3Event
-): InitialModelRecommendation[] {
-  try {
-    return parseInitialRecommendationResponse(raw, {
-      event,
-      responseMetadata: toResponseMetadata(response),
-      suppressLogging: true,
-      userId,
-    })
-  } catch {
-    return []
-  }
 }
 
 function buildInitialRecommendationRequest(
@@ -186,10 +149,9 @@ async function fetchInitialRecommendations(
       parsed: parseInitialRecommendationResponse(
         initialResponse.content,
         {
-          allowPartialRecovery: false,
           event,
+          requestedCount: INITIAL_RECOMMENDATION_COUNT,
           responseMetadata: toResponseMetadata(initialResponse),
-          suppressLogging: true,
           userId,
         }
       ),
@@ -219,10 +181,9 @@ async function fetchInitialRecommendations(
       const parsed = parseInitialRecommendationResponse(
         retryResponse.content,
         {
-          allowPartialRecovery: false,
           event,
+          requestedCount: INITIAL_RECOMMENDATION_RETRY_COUNT,
           responseMetadata: toResponseMetadata(retryResponse),
-          suppressLogging: true,
           userId,
         }
       )
@@ -250,56 +211,6 @@ async function fetchInitialRecommendations(
         parsed,
       }
     } catch (retryError) {
-      const recoveredInitialRecommendations = safelyRecoverInitialRecommendations(
-        initialResponse.content,
-        initialResponse,
-        userId,
-        event
-      )
-      const recoveredRetryRecommendations = safelyRecoverInitialRecommendations(
-        retryResponse.content,
-        retryResponse,
-        userId,
-        event
-      )
-      const recoveredRecommendations = mergeRecoveredRecommendations(
-        recoveredInitialRecommendations,
-        recoveredRetryRecommendations
-      )
-
-      if (recoveredRecommendations.length > 0) {
-        const recoveredRaw = JSON.stringify({ recommendations: recoveredRecommendations })
-
-        logPrivateInfo({
-          event: 'recommendation.ai_provider_partial_response_recovered',
-          source: 'ai_provider',
-          statusCode: 200,
-          route: event?.path,
-          method: event?.method,
-          userId,
-          extra: {
-            initialAttempt: {
-              errorMessage: getErrorMessage(firstError),
-              recoveredRecommendationCount: recoveredInitialRecommendations.length,
-              ...toResponseMetadata(initialResponse),
-            },
-            retryAttempt: {
-              errorMessage: getErrorMessage(retryError),
-              recoveredRecommendationCount: recoveredRetryRecommendations.length,
-              ...toResponseMetadata(retryResponse),
-            },
-            mergedRecoveredRecommendationCount: recoveredRecommendations.length,
-          },
-        })
-
-        return {
-          systemPrompt: retryRequest.systemPrompt,
-          userMessage: retryRequest.userMessage,
-          raw: recoveredRaw,
-          parsed: recoveredRecommendations,
-        }
-      }
-
       logPrivateError({
         cause: firstError,
         event: 'recommendation.ai_provider_response_invalid_after_retry',
@@ -491,7 +402,7 @@ export async function getRecommendationsFromPlatformAi(
       content: followUpMessage,
     })
 
-    const replacementRaw = await askPlatformAi({
+    const replacementResponse = await askPlatformAiResponse({
       systemPrompt,
       userMessage,
       messages: [...messages],
@@ -503,11 +414,14 @@ export async function getRecommendationsFromPlatformAi(
     })
     messages.push({
       role: 'assistant',
-      content: replacementRaw,
+      content: replacementResponse.content,
     })
 
-    const replacements = parseReplacementRecommendationResponse(replacementRaw, {
+    const replacements = parseReplacementRecommendationResponse(replacementResponse.content, {
       event,
+      replacementIndexes: toIndexes(validationResult.blocked),
+      requestedCount: replacementsNeeded,
+      responseMetadata: toResponseMetadata(replacementResponse),
       userId,
     })
     aiCandidateCount += replacements.length

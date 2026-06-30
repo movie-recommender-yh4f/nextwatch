@@ -27,9 +27,11 @@ export interface PlatformAiMessage {
 
 export interface PlatformAiResponse {
   content: string
+  finishReason: string | null
   provider: 'google' | 'openrouter'
   model: string
   responseMode: 'json_schema'
+  usage: unknown
 }
 
 interface AskPlatformAiOptions {
@@ -297,9 +299,11 @@ async function createChatCompletion(
 
     return {
       content,
+      finishReason: completion.choices[0]?.finish_reason ?? null,
       provider: provider.provider,
       model,
       responseMode: 'json_schema',
+      usage: completion.usage ?? null,
     }
   } catch (error) {
     throw createProviderError(error, {

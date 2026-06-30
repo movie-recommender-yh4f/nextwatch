@@ -17,13 +17,11 @@ vi.mock('../../../server/utils/tmdb/client', () => ({
   fetchTmdb: fetchTmdbMock,
 }))
 
-const { askPlatformAiMock, askPlatformAiResponseMock } = vi.hoisted(() => ({
-  askPlatformAiMock: vi.fn(),
+const { askPlatformAiResponseMock } = vi.hoisted(() => ({
   askPlatformAiResponseMock: vi.fn(),
 }))
 
 vi.mock('../../../server/utils/recommendations/ai-client', () => ({
-  askPlatformAi: askPlatformAiMock,
   askPlatformAiResponse: askPlatformAiResponseMock,
 }))
 
@@ -38,7 +36,7 @@ const {
   createRecommendationValidationState,
   validateRecommendationBatch,
 } = await import('../../../server/utils/recommendations/recommendation-validation')
-const { parseInitialRecommendationResponse } = await import(
+const { parseInitialRecommendationResponse, parseReplacementRecommendationResponse } = await import(
   '../../../server/utils/recommendations/response-parser'
 )
 const { getRecommendationsFromPlatformAi } = await import(
@@ -445,10 +443,11 @@ describe('parseInitialRecommendationResponse', () => {
     expect(JSON.parse(loggedMessage) as unknown).toMatchObject({
       event: 'recommendation.ai_provider_parse_failed',
       extra: {
-        providedResponse,
-        providedResponseLength: providedResponse.length,
-        providedResponseTruncated: false,
-        expectedResponseSchemaName: 'movie_recommendations',
+        errorName: 'SyntaxError',
+        contentLength: providedResponse.length,
+        contentStart: providedResponse,
+        contentEnd: providedResponse,
+        schemaName: 'movie_recommendations',
         expectedResponseSchema: {
           type: 'object',
           required: ['recommendations'],
@@ -460,14 +459,13 @@ describe('parseInitialRecommendationResponse', () => {
 
 describe('getRecommendationsFromPlatformAi', () => {
   beforeEach(() => {
-    askPlatformAiMock.mockReset()
     askPlatformAiResponseMock.mockReset()
   })
 
   it('accepts a top-level recommendation array payload', async () => {
     setupSearchRows([{ title: 'Stalker', year: 1979, tmdbId: 1398 }])
     askPlatformAiResponseMock.mockResolvedValue({
-      content: JSON.stringify([{ index: 1, title: 'Stalker', release_year: 1979 }]),
+      content: JSON.stringify([['Stalker', 1979]]),
       provider: 'google',
       model: 'gemini-2.5-flash-lite',
       responseMode: 'json_schema',
@@ -490,7 +488,7 @@ describe('getRecommendationsFromPlatformAi', () => {
     setupSearchRows([{ title: 'Stalker', year: 1979, tmdbId: 1398 }])
     askPlatformAiResponseMock.mockResolvedValue({
       content: JSON.stringify({
-        recommendations: [{ index: 1, title: 'Stalker', release_year: 1979 }],
+        recommendations: [['Stalker', 1979]],
       }),
       provider: 'google',
       model: 'gemini-2.5-flash-lite',
@@ -514,7 +512,7 @@ describe('getRecommendationsFromPlatformAi', () => {
     setupSearchRows([{ title: 'Stalker', year: 1979, tmdbId: 1398 }])
     askPlatformAiResponseMock.mockResolvedValue({
       content: JSON.stringify({
-        recommendations: [{ index: 1, title: 'Stalker', release_year: 1979 }],
+        recommendations: [['Stalker', 1979]],
       }),
       provider: 'google',
       model: 'gemini-2.5-flash-lite',
@@ -597,28 +595,23 @@ describe('getRecommendationsFromPlatformAi', () => {
     askPlatformAiResponseMock.mockResolvedValueOnce({
       content: JSON.stringify({
           recommendations: [
-            {
-              index: 1,
-              title: 'Alien',
-              release_year: 1979,
-            },
-            {
-              index: 2,
-              title: 'Unknown Festival Cut',
-              release_year: 2024,
-            },
-            ...validInitialItems,
+            ['Alien', 1979],
+            ['Unknown Festival Cut', 2024],
+            ...validInitialItems.map((item) => [item.title, item.release_year]),
           ],
         }),
       provider: 'google',
       model: 'gemini-2.5-flash-lite',
       responseMode: 'json_schema',
     })
-    askPlatformAiMock.mockResolvedValueOnce(
-      JSON.stringify({
-        recommendations: replacementItems,
-      })
-    )
+    askPlatformAiResponseMock.mockResolvedValueOnce({
+      content: JSON.stringify({
+        recommendations: replacementItems.map((item) => [item.title, item.release_year]),
+      }),
+      provider: 'google',
+      model: 'gemini-2.5-flash-lite',
+      responseMode: 'json_schema',
+    })
 
     const result = await getRecommendationsFromPlatformAi(
       [{ tmdbId: 1, title: 'Alien', year: 1979 }],
@@ -631,10 +624,9 @@ describe('getRecommendationsFromPlatformAi', () => {
       2000,
       2001,
     ])
-    expect(askPlatformAiResponseMock).toHaveBeenCalledTimes(1)
-    expect(askPlatformAiMock).toHaveBeenCalledTimes(1)
+    expect(askPlatformAiResponseMock).toHaveBeenCalledTimes(2)
 
-    const followUpRequest = askPlatformAiMock.mock.calls[0]?.[0] as
+    const followUpRequest = askPlatformAiResponseMock.mock.calls[1]?.[0] as
       | { messages?: Array<{ role: string; content: string }>; rateLimit?: boolean }
       | undefined
     if (!followUpRequest?.messages) {
@@ -654,14 +646,14 @@ describe('getRecommendationsFromPlatformAi', () => {
     setupSearchRows([{ title: 'Stalker', year: 1979, tmdbId: 1398 }])
     askPlatformAiResponseMock
       .mockResolvedValueOnce({
-        content: '{"recommendations":[{"index":1,"title":"Stalker","release_year":1979}',
+        content: '{"recommendations":[["Stalker",1979]',
         provider: 'google',
         model: 'gemini-2.5-flash-lite',
         responseMode: 'json_schema',
       })
       .mockResolvedValueOnce({
         content: JSON.stringify({
-          recommendations: [{ index: 1, title: 'Stalker', release_year: 1979 }],
+          recommendations: [['Stalker', 1979]],
         }),
         provider: 'google',
         model: 'gemini-2.0-flash',
@@ -694,20 +686,25 @@ describe('getRecommendationsFromPlatformAi', () => {
     })
   })
 
-  it('recovers partial recommendations when both initial responses are malformed', async () => {
-    setupSearchRows([
-      { title: 'Stalker', year: 1979, tmdbId: 1398 },
-      { title: 'Solaris', year: 1972, tmdbId: 1399 },
-    ])
+  it('recovers enough complete recommendations from a malformed retry response', async () => {
+    const recoveredItems = Array.from({ length: 18 }, (_, index) => [
+      `Recovered ${index + 1}`,
+      1980 + index,
+    ] as const)
+    setupSearchRows(recoveredItems.map(([title, year], index) => ({
+      title,
+      year,
+      tmdbId: 1400 + index,
+    })))
     askPlatformAiResponseMock
       .mockResolvedValueOnce({
-        content: '{"recommendations":[{"index":1,"title":"Stalker","release_year":1979}',
+        content: '{"recommendations":[["Too few",1979]',
         provider: 'google',
         model: 'gemini-2.5-flash-lite',
         responseMode: 'json_schema',
       })
       .mockResolvedValueOnce({
-        content: '{"recommendations":[{"index":1,"title":"Solaris","release_year":1972}',
+        content: `{"recommendations":${JSON.stringify(recoveredItems)}`,
         provider: 'google',
         model: 'gemini-2.0-flash',
         responseMode: 'json_schema',
@@ -719,32 +716,29 @@ describe('getRecommendationsFromPlatformAi', () => {
       'user-1'
     )
 
-    expect(result.recommendations.map((recommendation) => recommendation.tmdbId)).toEqual([
-      1398,
-      1399,
-    ])
+    expect(result.recommendations).toHaveLength(18)
     expect(askPlatformAiResponseMock).toHaveBeenCalledTimes(2)
   })
 
   it('logs provider metadata when partial recommendation recovery succeeds', async () => {
-    setupSearchRows([
-      { title: 'Stalker', year: 1979, tmdbId: 1398 },
-      { title: 'Solaris', year: 1972, tmdbId: 1399 },
-    ])
+    const recoveredItems = Array.from({ length: 20 }, (_, index) => [
+      `Recovered ${index + 1}`,
+      1980 + index,
+    ] as const)
+    setupSearchRows(recoveredItems.map(([title, year], index) => ({
+      title,
+      year,
+      tmdbId: 1500 + index,
+    })))
     const consoleInfoSpy = vi.spyOn(console, 'info').mockImplementation(() => undefined)
-    askPlatformAiResponseMock
-      .mockResolvedValueOnce({
-        content: '{"recommendations":[{"index":1,"title":"Stalker","release_year":1979}',
-        provider: 'google',
-        model: 'gemini-2.5-flash-lite',
-        responseMode: 'json_schema',
-      })
-      .mockResolvedValueOnce({
-        content: '{"recommendations":[{"index":1,"title":"Solaris","release_year":1972}',
-        provider: 'google',
-        model: 'gemini-2.0-flash',
-        responseMode: 'json_schema',
-      })
+    askPlatformAiResponseMock.mockResolvedValueOnce({
+      content: `{"recommendations":${JSON.stringify(recoveredItems)}`,
+      finishReason: 'length',
+      provider: 'google',
+      model: 'gemini-2.5-flash-lite',
+      responseMode: 'json_schema',
+      usage: { completion_tokens: 200 },
+    })
 
     await getRecommendationsFromPlatformAi(
       [{ tmdbId: 1, title: 'Alien', year: 1979 }],
@@ -756,25 +750,21 @@ describe('getRecommendationsFromPlatformAi', () => {
       (call) =>
         typeof call[0] === 'string' &&
         (JSON.parse(call[0]) as { event?: string }).event ===
-          'recommendation.ai_provider_partial_response_recovered'
+          'recommendation.ai_provider_partial_recovered'
     )?.[0]
     if (typeof loggedMessage !== 'string') {
       throw new Error('Expected partial recovery to log a JSON string')
     }
 
     expect(JSON.parse(loggedMessage) as unknown).toMatchObject({
-      event: 'recommendation.ai_provider_partial_response_recovered',
+      event: 'recommendation.ai_provider_partial_recovered',
       extra: {
-        initialAttempt: {
-          provider: 'google',
-          model: 'gemini-2.5-flash-lite',
-          responseMode: 'json_schema',
-        },
-        retryAttempt: {
-          provider: 'google',
-          model: 'gemini-2.0-flash',
-          responseMode: 'json_schema',
-        },
+        requestedCount: 50,
+        recoveredCount: 20,
+        minimumRequiredCount: 20,
+        finishReason: 'length',
+        provider: 'google',
+        model: 'gemini-2.5-flash-lite',
       },
     })
   })
@@ -808,5 +798,83 @@ describe('getRecommendationsFromPlatformAi', () => {
 
     expect(INITIAL_RECOMMENDATION_COUNT).toBe(50)
     expect(message).toContain('Recommend exactly 50 candidate movies')
+    expect(message).toContain('Return ONLY valid JSON.')
+    expect(message).toContain('{"recommendations":[["Movie title",2012],["Another movie",null]]}')
+  })
+
+  it('recovers complete tuples, ignores an incomplete tuple, and deduplicates normalized titles', () => {
+    const raw = '{"recommendations":[["Stalker",1979],[" stalker ",1979],["Solaris",null],["Broken"'
+
+    expect(parseInitialRecommendationResponse(raw, {
+      requestedCount: 3,
+    })).toEqual([
+      { index: 1, title: 'Stalker', release_year: 1979 },
+      { index: 2, title: 'Solaris', release_year: null },
+    ])
+  })
+
+  it('rejects partial recovery below the minimum candidate threshold', () => {
+    const raw = '{"recommendations":[["Stalker",1979],["Solaris",null]'
+
+    expect(() => parseInitialRecommendationResponse(raw, {
+      requestedCount: 10,
+    })).toThrow('Unable to generate recommendations right now.')
+  })
+
+  it('maps replacement tuples to blocked indexes by position', () => {
+    const raw = '{"recommendations":[["Stalker",1979],["Solaris",null]]}'
+
+    expect(parseReplacementRecommendationResponse(raw, {
+      replacementIndexes: [8, 3],
+      requestedCount: 2,
+    })).toEqual([
+      { replaced_index: 8, title: 'Stalker', release_year: 1979 },
+      { replaced_index: 3, title: 'Solaris', release_year: null },
+    ])
+  })
+
+  it('does not JSON.parse a non-stop response and logs successful recovery metadata', () => {
+    const consoleInfoSpy = vi.spyOn(console, 'info').mockImplementation(() => undefined)
+    const raw = '{"recommendations":[["Stalker",1979],["Solaris",null]]}'
+
+    expect(parseInitialRecommendationResponse(raw, {
+      requestedCount: 2,
+      responseMetadata: {
+        finishReason: 'length',
+        model: 'model-1',
+        provider: 'openrouter',
+        responseMode: 'json_schema',
+        usage: { completion_tokens: 10 },
+      },
+    })).toHaveLength(2)
+
+    const log = consoleInfoSpy.mock.calls
+      .map(([message]) => typeof message === 'string' ? JSON.parse(message) as { event?: string; extra?: unknown } : null)
+      .find((entry) => entry?.event === 'recommendation.ai_provider_partial_recovered' &&
+        (entry.extra as { provider?: string } | undefined)?.provider === 'openrouter')
+
+    expect(log?.extra).toMatchObject({
+      requestedCount: 2,
+      recoveredCount: 2,
+      minimumRequiredCount: 2,
+      finishReason: 'length',
+      provider: 'openrouter',
+      model: 'model-1',
+      responseLength: raw.length,
+    })
+
+    const incompleteLog = consoleInfoSpy.mock.calls
+      .map(([message]) => typeof message === 'string' ? JSON.parse(message) as { event?: string; extra?: unknown } : null)
+      .find((entry) => entry?.event === 'recommendation.ai_provider_response_incomplete' &&
+        (entry.extra as { provider?: string } | undefined)?.provider === 'openrouter')
+
+    expect(incompleteLog?.extra).toMatchObject({
+      finishReason: 'length',
+      usage: { completion_tokens: 10 },
+      contentLength: raw.length,
+      provider: 'openrouter',
+      model: 'model-1',
+      responseMode: 'json_schema',
+    })
   })
 })

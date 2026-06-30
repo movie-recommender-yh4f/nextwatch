@@ -41,6 +41,7 @@ function toSignupError(error: unknown): SignupError {
 
 export const useAuth = () => {
   const supabase = useSupabase()
+  const { clearSessionRecommendations } = useRecommendationSession()
   const { syncWatchedMoviesFromSupabase, processPendingWatchedMovies, clearWatchedMovies } =
     useWatchedMovies()
   const { syncMyListFromSupabase, processPendingMyListMovies, clearMyList } = useMyList()
@@ -157,6 +158,7 @@ export const useAuth = () => {
       clearStatus()
       clearWatchedMovies()
       clearMyList()
+      clearSessionRecommendations()
     } catch {}
   }
 

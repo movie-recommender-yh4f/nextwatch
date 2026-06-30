@@ -26,6 +26,9 @@ import { logPrivateError, logPrivateInfo, throwSupabaseError } from '../utils/sh
 const RECOMMENDATIONS_TABLE = 'recommendations'
 const TTL_MS = 7 * 24 * 60 * 60 * 1000
 const QUERY_TRUE = ['true', '1']
+const SESSION_RECOMMENDED_TMDB_IDS_QUERY = 'sessionRecommendedTmdbIds'
+const TMDB_ID_DELIMITER = ','
+const MIN_TMDB_ID = 1
 const LOAD_RECOMMENDATIONS_MESSAGE = 'Unable to load recommendations right now.'
 const SAVE_RECOMMENDATIONS_MESSAGE = 'Unable to save recommendations right now.'
 
@@ -98,15 +101,39 @@ function dedupeRecommendationIds(recommendationIds: number[]): number[] {
   return dedupedIds
 }
 
+function parseRecommendedTmdbIds(value: unknown): number[] {
+  const rawValues =
+    typeof value === 'string' ? [value] : Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : []
+
+  if (rawValues.length === 0) {
+    return []
+  }
+
+  const ids: number[] = []
+
+  for (const rawValue of rawValues) {
+    for (const entry of rawValue.split(TMDB_ID_DELIMITER)) {
+      const parsedId = Number(entry)
+      if (!Number.isInteger(parsedId) || parsedId < MIN_TMDB_ID) {
+        continue
+      }
+
+      ids.push(parsedId)
+    }
+  }
+
+  return dedupeRecommendationIds(ids)
+}
+
 function filterFinalRecommendations(
   recommendations: RecommendationWithId[],
   watchedMovies: WatchedMovieRecord[],
   myListMovies: WatchedMovieRecord[],
-  excludedMovies: RecommendationWithId[]
+  excludedTmdbIds: number[]
 ): FilteredRecommendationsResult {
   const watchedIds = new Set(watchedMovies.map((movie) => movie.tmdbId))
   const myListIds = new Set(myListMovies.map((movie) => movie.tmdbId))
-  const excludedIds = new Set(toRecommendationIds(excludedMovies))
+  const excludedIds = new Set(excludedTmdbIds)
   const seenIds = new Set<number>()
   const nonMyListRecommendations: RecommendationWithId[] = []
   const myListRecommendations: RecommendationWithId[] = []
@@ -306,7 +333,8 @@ async function storeCachedRecommendations(
 export default defineEventHandler(async (event) => {
   const { supabase, user } = await getAuthorizedUser(event)
   await requireCompletedOnboarding(event, supabase, user.id)
-  const { getNew, refresh } = getQuery(event)
+  const { getNew, refresh, [SESSION_RECOMMENDED_TMDB_IDS_QUERY]: sessionRecommendedTmdbIds } =
+    getQuery(event)
   const isGetNew = isQueryFlagEnabled(getNew)
   const isRefresh = !isGetNew && isQueryFlagEnabled(refresh)
 
@@ -322,7 +350,7 @@ export default defineEventHandler(async (event) => {
 
   try {
     const watchedMovies = await fetchWatchedMovies(supabase, user.id, { event })
-    let excludedMovies: RecommendationWithId[] = []
+    let promptExcludedMovies: RecommendationWithId[] = []
 
     if (watchedMovies.length === 0) {
       throw createError({
@@ -333,6 +361,14 @@ export default defineEventHandler(async (event) => {
 
     const watchedHash = computeWatchedHash(watchedMovies)
     const cacheState = await getRecommendationCacheState(event, supabase, user.id, watchedHash)
+    const sessionExcludedRecommendationIds = isGetNew
+      ? parseRecommendedTmdbIds(sessionRecommendedTmdbIds)
+      : []
+    const promptExcludedRecommendationIds = isGetNew ? cacheState.storedRecommendationIds : []
+    const validationExcludedRecommendationIds = dedupeRecommendationIds([
+      ...cacheState.storedRecommendationIds,
+      ...sessionExcludedRecommendationIds,
+    ])
 
     if (!isGetNew && !isRefresh && cacheState.freshRecommendationIds) {
       return buildSuccessResponse(cacheState.freshRecommendationIds, true)
@@ -340,10 +376,10 @@ export default defineEventHandler(async (event) => {
 
     const myListMovies = await fetchMyListMovies(supabase, user.id, { event })
 
-    if (isGetNew && cacheState.storedRecommendationIds.length > 0) {
-      excludedMovies = await hydrateRecommendationsByTmdbIds(
+    if (promptExcludedRecommendationIds.length > 0) {
+      promptExcludedMovies = await hydrateRecommendationsByTmdbIds(
         supabase,
-        cacheState.storedRecommendationIds,
+        promptExcludedRecommendationIds,
         { event, userId: user.id }
       )
     }
@@ -355,14 +391,15 @@ export default defineEventHandler(async (event) => {
         myListMovies,
         user.id,
         event,
-        excludedMovies
+        promptExcludedMovies,
+        validationExcludedRecommendationIds
       )
       const generatedRecommendations = platformAiResult.recommendations
       const filteredResult = filterFinalRecommendations(
         generatedRecommendations,
         watchedMovies,
         myListMovies,
-        excludedMovies
+        validationExcludedRecommendationIds
       )
       recommendations = filteredResult.recommendations
 

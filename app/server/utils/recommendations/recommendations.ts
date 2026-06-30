@@ -332,7 +332,8 @@ export async function getRecommendationsFromPlatformAi(
   myListMovies: WatchedMovieRecord[],
   userId?: string,
   event?: H3Event,
-  excludedMovies: RecommendationWithId[] = []
+  excludedMovies: RecommendationWithId[] = [],
+  validationExcludedTmdbIds: number[] = []
 ): Promise<{
   recommendations: RecommendationWithId[]
   aiCandidateCount: number
@@ -343,7 +344,8 @@ export async function getRecommendationsFromPlatformAi(
   const validationState = createRecommendationValidationState(
     watchedMovies,
     myListMovies,
-    toBlockedExcludedRecommendations(excludedMovies)
+    toBlockedExcludedRecommendations(excludedMovies),
+    validationExcludedTmdbIds
   )
   const acceptedRecommendations: IndexedRecommendationWithId[] = []
   let tmdbFallbackCount = 0

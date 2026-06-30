@@ -245,6 +245,11 @@ const FETCH_MODE = {
   GET_NEW: 'getNew',
   REFRESH: 'refresh',
 } as const
+const RECOMMENDATION_QUERY = {
+  GET_NEW: 'getNew',
+  REFRESH: 'refresh',
+  SESSION_RECOMMENDED_TMDB_IDS: 'sessionRecommendedTmdbIds',
+} as const
 
 type FetchMode = (typeof FETCH_MODE)[keyof typeof FETCH_MODE]
 
@@ -257,6 +262,10 @@ const { watchedMovies, markAsWatched, queuePendingWatchedMovie, removePendingWat
   useWatchedMovies()
 const { myList, addToMyList } = useMyList()
 const { isAuthenticated, loading: authLoading, session } = useAuth()
+const {
+  buildSessionRecommendationQueryValue,
+  rememberSessionRecommendations,
+} = useRecommendationSession()
 const { completed: onboardingCompleted, hasResolved: onboardingResolved } = useOnboarding()
 const { getMovieDetails } = useMovieDetails()
 const supabase = useSupabase()
@@ -420,6 +429,7 @@ function applyRecommendations(recommendations: unknown): void {
   movies.value = recommendationItems
   originalMovies.value = recommendationItems.map((recommendation) => ({ ...recommendation }))
   currentMovieDetails.value = null
+  rememberSessionRecommendations(recommendationItems)
   hasSuccessfulRecommendationLoad.value = true
 }
 
@@ -493,6 +503,29 @@ const isWatched = computed(() => {
 function syncDesktopDetailsLayout(e: MediaQueryListEvent | MediaQueryList): void {
   const matches = 'matches' in e ? e.matches : (e as MediaQueryList).matches
   isDesktopDetailsLayout.value = matches
+}
+
+function buildRecommendationQueryParams(mode: FetchMode): Record<string, string> {
+  if (mode === FETCH_MODE.GET_NEW) {
+    const params: Record<string, string> = {
+      [RECOMMENDATION_QUERY.GET_NEW]: 'true',
+    }
+    const sessionRecommendedTmdbIds = buildSessionRecommendationQueryValue()
+
+    if (sessionRecommendedTmdbIds.length > 0) {
+      params[RECOMMENDATION_QUERY.SESSION_RECOMMENDED_TMDB_IDS] = sessionRecommendedTmdbIds
+    }
+
+    return params
+  }
+
+  if (mode === FETCH_MODE.REFRESH) {
+    return {
+      [RECOMMENDATION_QUERY.REFRESH]: 'true',
+    }
+  }
+
+  return {}
 }
 
 onMounted(() => {
@@ -583,12 +616,7 @@ const fetchRecommendations = async (mode: FetchMode = FETCH_MODE.DEFAULT): Promi
     if (!session?.access_token) return
     didAttempt = true
 
-    const params =
-      mode === FETCH_MODE.GET_NEW
-        ? { getNew: 'true' }
-        : mode === FETCH_MODE.REFRESH
-          ? { refresh: 'true' }
-          : {}
+    const params = buildRecommendationQueryParams(mode)
 
     const response = await $fetch<RecommendationApiResponse>('/api/recommend', {
       params,

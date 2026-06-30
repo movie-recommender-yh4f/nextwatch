@@ -48,7 +48,14 @@
         />
 
         <div
-          v-if="!hasMovies"
+          v-if="isInitialLoadPending"
+          class="flex min-h-[24rem] items-center justify-center rounded-[1.75rem] border border-outline-variant bg-surface-container-low px-6 py-14 shadow-glow"
+        >
+          <FilmReelLoader :label="INITIAL_WATCHED_LOADING_LABEL" />
+        </div>
+
+        <div
+          v-else-if="!hasMovies"
           class="rounded-[1.75rem] border border-dashed border-outline-variant bg-surface-container-low px-6 py-14 text-center shadow-glow"
         >
           <p class="text-2xl font-semibold text-on-background">Your watched list is empty</p>
@@ -112,6 +119,7 @@ import { useVirtualGrid } from '~/composables/useVirtualGrid'
 const SEARCH_PLACEHOLDER = 'Search watched movies...'
 const SORT_MODAL_TITLE = 'Sort watched movies'
 const UNDO_TIMEOUT_MS = 5000
+const INITIAL_WATCHED_LOADING_LABEL = 'Loading watched movies...'
 const DEFAULT_METADATA_PROGRESS = { loaded: 0, total: 0 }
 const GRID_CARD_ASPECT_RATIO = 2 / 3
 const GRID_CARD_BODY_HEIGHT = 96
@@ -122,6 +130,7 @@ const GRID_OVERSCAN = 12
 const { watchedMovies, removeFromWatched, markAsWatched, syncWatchedMoviesFromSupabase } =
   useWatchedMovies()
 const { getMovieDetails: fetchMovieDetails } = useMovieDetails()
+const { isInitialLoadPending, runInitialLoad } = useInitialPageLoad()
 
 const {
   searchQuery,
@@ -170,7 +179,9 @@ const metadataProgress = computed(() => DEFAULT_METADATA_PROGRESS)
 let undoTimer: ReturnType<typeof setTimeout> | null = null
 
 onMounted(() => {
-  void syncWatchedMoviesFromSupabase()
+  void runInitialLoad(async () => {
+    await syncWatchedMoviesFromSupabase()
+  })
 })
 
 const dismissUndo = () => {

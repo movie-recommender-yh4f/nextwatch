@@ -105,7 +105,8 @@
 
       <div
         v-else
-        class="flex min-h-0 flex-1 items-center justify-center [--card-non-poster-height:clamp(9.25rem,19dvh,12rem)] [--fit-safety:clamp(0.85rem,2dvh,1.5rem)] [--footer-clearance:clamp(0.65rem,1.75dvh,1.25rem)] [--footer-height:4rem] [--header-height:4rem] [--height-fit-width:calc((100dvh-var(--header-height)-var(--footer-height)-var(--page-vertical-padding)-var(--footer-clearance)-var(--card-non-poster-height)-var(--fit-safety))/1.5)] [--page-vertical-padding:1.5rem] sm:[--footer-height:4.25rem] sm:[--page-vertical-padding:2rem] max-[760px]:[--card-non-poster-height:clamp(7.85rem,17dvh,9.75rem)] max-[760px]:[--fit-safety:clamp(0.65rem,1.5dvh,1rem)] max-[760px]:[--footer-clearance:clamp(0.5rem,1.4dvh,0.85rem)] max-[680px]:[--card-non-poster-height:clamp(7rem,16dvh,8.65rem)] max-[680px]:[--fit-safety:0.65rem] max-[680px]:[--footer-clearance:0.5rem]"
+        :style="recommendationViewportStyle"
+        class="flex min-h-0 flex-1 items-center justify-center [--card-non-poster-height:clamp(9.25rem,calc(var(--app-dvh)*19),12rem)] [--fit-safety:clamp(0.85rem,calc(var(--app-dvh)*2),1.5rem)] [--footer-clearance:clamp(0.65rem,calc(var(--app-dvh)*1.75),1.25rem)] [--footer-height:4rem] [--header-height:4rem] [--height-fit-width:calc((var(--recommendation-viewport-height)-var(--header-height)-var(--footer-height)-var(--page-vertical-padding)-var(--footer-clearance)-var(--card-non-poster-height)-var(--fit-safety))/1.5)] [--page-vertical-padding:1.5rem] sm:[--footer-height:4.25rem] sm:[--page-vertical-padding:2rem] max-[760px]:[--card-non-poster-height:clamp(7.85rem,calc(var(--app-dvh)*17),9.75rem)] max-[760px]:[--fit-safety:clamp(0.65rem,calc(var(--app-dvh)*1.5),1rem)] max-[760px]:[--footer-clearance:clamp(0.5rem,calc(var(--app-dvh)*1.4),0.85rem)] max-[680px]:[--card-non-poster-height:clamp(7rem,calc(var(--app-dvh)*16),8.65rem)] max-[680px]:[--fit-safety:0.65rem] max-[680px]:[--footer-clearance:0.5rem]"
       >
         <div
           v-if="detailsPending"
@@ -204,6 +205,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import type { Movie } from '~/types/movie'
+import { APP_HEIGHT_CSS_VALUE } from '~/composables/useStableViewportHeight'
 
 interface RecommendationItem {
   tmdbId: number
@@ -257,15 +259,15 @@ const RETRY_COOLDOWN_S = 30
 const RETRY_COOLDOWN_KEY = 'retry-cooldown-expires'
 const FALLBACK_RECOMMENDATION_ERROR_MESSAGE = 'Recommendations are unavailable right now.'
 const MAX_POSTER_STACK_CARDS = 2
+// to avoid showing the empty state for a brief moment while the auth state is still initializing
+const UNAUTHENTICATED_FALLBACK_DELAY_MS = 150
 
 const { watchedMovies, markAsWatched, queuePendingWatchedMovie, removePendingWatchedMovie } =
   useWatchedMovies()
 const { myList, addToMyList } = useMyList()
 const { isAuthenticated, loading: authLoading, session } = useAuth()
-const {
-  buildSessionRecommendationQueryValue,
-  rememberSessionRecommendations,
-} = useRecommendationSession()
+const { buildSessionRecommendationQueryValue, rememberSessionRecommendations } =
+  useRecommendationSession()
 const { completed: onboardingCompleted, hasResolved: onboardingResolved } = useOnboarding()
 const { getMovieDetails } = useMovieDetails()
 const supabase = useSupabase()
@@ -295,6 +297,12 @@ let retryTimerHandle: ReturnType<typeof setInterval> | null = null
 let recommendationRefreshHandler: (() => void) | null = null
 let desktopDetailsMediaQuery: MediaQueryList | null = null
 let isFetching = false
+let unauthenticatedFallbackTimeout: ReturnType<typeof setTimeout> | null = null
+
+const recommendationViewportStyle = computed(() => ({
+  '--app-dvh': `calc(${APP_HEIGHT_CSS_VALUE} / 100)`,
+  '--recommendation-viewport-height': APP_HEIGHT_CSS_VALUE,
+}))
 
 function toRecommendationItems(recommendations: unknown): RecommendationItem[] {
   if (!Array.isArray(recommendations)) {
@@ -433,6 +441,23 @@ function applyRecommendations(recommendations: unknown): void {
   hasSuccessfulRecommendationLoad.value = true
 }
 
+function clearUnauthenticatedFallbackTimeout() {
+  if (unauthenticatedFallbackTimeout === null) {
+    return
+  }
+
+  clearTimeout(unauthenticatedFallbackTimeout)
+  unauthenticatedFallbackTimeout = null
+}
+
+function scheduleUnauthenticatedFallback() {
+  clearUnauthenticatedFallbackTimeout()
+  unauthenticatedFallbackTimeout = setTimeout(() => {
+    recommendationsPending.value = false
+    unauthenticatedFallbackTimeout = null
+  }, UNAUTHENTICATED_FALLBACK_DELAY_MS)
+}
+
 const currentMovie = computed(() => movies.value[0] || null)
 const showDesktopDetailsPanel = computed(
   () => isDesktopDetailsLayout.value && currentMovieFormatted.value !== null
@@ -552,6 +577,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   if (retryTimerHandle !== null) clearInterval(retryTimerHandle)
+  clearUnauthenticatedFallbackTimeout()
   if (desktopDetailsMediaQuery !== null) {
     desktopDetailsMediaQuery.removeEventListener('change', syncDesktopDetailsLayout)
     desktopDetailsMediaQuery = null
@@ -680,9 +706,10 @@ watch(
   ([isLoading, _token, hasResolvedOnboarding, hasCompletedOnboarding]) => {
     if (isLoading) return
     if (!isAuthenticated.value) {
-      recommendationsPending.value = false
+      scheduleUnauthenticatedFallback()
       return
     }
+    clearUnauthenticatedFallbackTimeout()
     if (!hasResolvedOnboarding) {
       return
     }

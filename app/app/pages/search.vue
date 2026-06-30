@@ -45,7 +45,7 @@
               v-model="searchQuery"
               type="text"
               placeholder="Find a movie..."
-              class="h-12 w-full rounded-[1.35rem] bg-surface-container-high pl-11 pr-11 text-sm font-medium text-on-surface outline-none transition placeholder:text-outline focus:ring-1 focus:ring-primary/30"
+              class="h-12 w-full rounded-[1.35rem] bg-surface-container-high pl-11 pr-11 text-base font-medium text-on-surface outline-none transition placeholder:text-outline focus:ring-1 focus:ring-primary/30 sm:text-sm"
               @input="handleInput"
             />
             <button
@@ -95,7 +95,14 @@
         </div>
 
         <div
-          v-if="isSearching"
+          v-if="isInitialLoadPending"
+          class="flex min-h-[24rem] items-center justify-center rounded-[1.75rem] border border-outline-variant bg-surface-container-low px-6 py-14 shadow-glow"
+        >
+          <FilmReelLoader :label="INITIAL_SEARCH_LOADING_LABEL" />
+        </div>
+
+        <div
+          v-else-if="isSearching"
           class="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-2 md:grid-cols-3 md:gap-x-6 md:gap-y-10 lg:grid-cols-4 xl:grid-cols-5"
         >
           <SkeletonSearchCard v-for="item in SKELETON_CARD_COUNT" :key="item" />
@@ -189,6 +196,7 @@ interface RatingOption {
 
 const SEARCH_DEBOUNCE_MS = 500
 const SKELETON_CARD_COUNT = 6
+const INITIAL_SEARCH_LOADING_LABEL = 'Loading movies...'
 const GRID_CARD_ASPECT_RATIO = 2 / 3
 const GRID_CARD_BODY_HEIGHT = 112
 const GRID_COLUMN_GAP = { compact: 16, regular: 24 }
@@ -201,6 +209,7 @@ const RATING_OPTIONS: RatingOption[] = [
 ]
 
 const { user, isAuthenticated } = useAuth()
+const { isInitialLoadPending, runInitialLoad } = useInitialPageLoad()
 const {
   markAsWatched,
   removeFromWatched,
@@ -346,15 +355,16 @@ const clearSearch = () => {
 }
 
 onMounted(() => {
-  void syncWatchedMoviesFromSupabase()
-  void syncMyListFromSupabase()
+  void runInitialLoad(async () => {
+    await Promise.all([syncWatchedMoviesFromSupabase(), syncMyListFromSupabase()])
 
-  if (hasSearchQuery.value) {
-    void searchTMDB(searchQuery.value)
-    return
-  }
+    if (hasSearchQuery.value) {
+      await searchTMDB(searchQuery.value)
+      return
+    }
 
-  void loadPopularMovies()
+    await loadPopularMovies()
+  })
 })
 
 const isAlreadyWatched = (tmdbId: number) => {

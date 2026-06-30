@@ -466,9 +466,12 @@ describe('getRecommendationsFromPlatformAi', () => {
 
   it('accepts a top-level recommendation array payload', async () => {
     setupSearchRows([{ title: 'Stalker', year: 1979, tmdbId: 1398 }])
-    askPlatformAiMock.mockResolvedValue(
-      JSON.stringify([{ index: 1, title: 'Stalker', release_year: 1979 }])
-    )
+    askPlatformAiResponseMock.mockResolvedValue({
+      content: JSON.stringify([{ index: 1, title: 'Stalker', release_year: 1979 }]),
+      provider: 'google',
+      model: 'gemini-2.5-flash-lite',
+      responseMode: 'json_schema',
+    })
 
     const result = await getRecommendationsFromPlatformAi([{ tmdbId: 1, title: 'Alien', year: 1979 }], [])
 
@@ -485,11 +488,14 @@ describe('getRecommendationsFromPlatformAi', () => {
 
   it('accepts an object payload that wraps recommendations', async () => {
     setupSearchRows([{ title: 'Stalker', year: 1979, tmdbId: 1398 }])
-    askPlatformAiMock.mockResolvedValue(
-      JSON.stringify({
+    askPlatformAiResponseMock.mockResolvedValue({
+      content: JSON.stringify({
         recommendations: [{ index: 1, title: 'Stalker', release_year: 1979 }],
-      })
-    )
+      }),
+      provider: 'google',
+      model: 'gemini-2.5-flash-lite',
+      responseMode: 'json_schema',
+    })
 
     const result = await getRecommendationsFromPlatformAi([{ tmdbId: 1, title: 'Alien', year: 1979 }], [])
 
@@ -506,11 +512,14 @@ describe('getRecommendationsFromPlatformAi', () => {
 
   it('asks for a larger candidate pool and sends taste-profile context', async () => {
     setupSearchRows([{ title: 'Stalker', year: 1979, tmdbId: 1398 }])
-    askPlatformAiMock.mockResolvedValue(
-      JSON.stringify({
+    askPlatformAiResponseMock.mockResolvedValue({
+      content: JSON.stringify({
         recommendations: [{ index: 1, title: 'Stalker', release_year: 1979 }],
-      })
-    )
+      }),
+      provider: 'google',
+      model: 'gemini-2.5-flash-lite',
+      responseMode: 'json_schema',
+    })
 
     await getRecommendationsFromPlatformAi(
       [
@@ -535,7 +544,7 @@ describe('getRecommendationsFromPlatformAi', () => {
       ]
     )
 
-    expect(askPlatformAiMock).toHaveBeenCalledWith(
+    expect(askPlatformAiResponseMock).toHaveBeenCalledWith(
       expect.objectContaining({
         systemPrompt: expect.stringContaining(
           `exactly ${INITIAL_RECOMMENDATION_COUNT} candidate movies`
@@ -547,7 +556,8 @@ describe('getRecommendationsFromPlatformAi', () => {
           }),
         ]),
         userMessage: expect.stringContaining('TASTE PROFILE:'),
-      })
+      }),
+      undefined
     )
   })
 
@@ -584,9 +594,8 @@ describe('getRecommendationsFromPlatformAi', () => {
     ]
 
     setupSearchRows(searchMovies)
-    askPlatformAiMock
-      .mockResolvedValueOnce(
-        JSON.stringify({
+    askPlatformAiResponseMock.mockResolvedValueOnce({
+      content: JSON.stringify({
           recommendations: [
             {
               index: 1,
@@ -600,13 +609,16 @@ describe('getRecommendationsFromPlatformAi', () => {
             },
             ...validInitialItems,
           ],
-        })
-      )
-      .mockResolvedValueOnce(
-        JSON.stringify({
-          recommendations: replacementItems,
-        })
-      )
+        }),
+      provider: 'google',
+      model: 'gemini-2.5-flash-lite',
+      responseMode: 'json_schema',
+    })
+    askPlatformAiMock.mockResolvedValueOnce(
+      JSON.stringify({
+        recommendations: replacementItems,
+      })
+    )
 
     const result = await getRecommendationsFromPlatformAi(
       [{ tmdbId: 1, title: 'Alien', year: 1979 }],
@@ -619,9 +631,10 @@ describe('getRecommendationsFromPlatformAi', () => {
       2000,
       2001,
     ])
-    expect(askPlatformAiMock).toHaveBeenCalledTimes(2)
+    expect(askPlatformAiResponseMock).toHaveBeenCalledTimes(1)
+    expect(askPlatformAiMock).toHaveBeenCalledTimes(1)
 
-    const followUpRequest = askPlatformAiMock.mock.calls[1]?.[0] as
+    const followUpRequest = askPlatformAiMock.mock.calls[0]?.[0] as
       | { messages?: Array<{ role: string; content: string }>; rateLimit?: boolean }
       | undefined
     if (!followUpRequest?.messages) {
@@ -637,15 +650,23 @@ describe('getRecommendationsFromPlatformAi', () => {
     expect(followUpRequest.rateLimit).toBe(false)
   })
 
-  it('retries the initial request with a smaller candidate pool after truncated JSON', async () => {
+  it('retries parse failures with a smaller candidate pool and excludes the malformed model', async () => {
     setupSearchRows([{ title: 'Stalker', year: 1979, tmdbId: 1398 }])
-    askPlatformAiMock
-      .mockResolvedValueOnce('{"recommendations":[{"index":1,"title":"Stalker","release_year":1979}')
-      .mockResolvedValueOnce(
-        JSON.stringify({
+    askPlatformAiResponseMock
+      .mockResolvedValueOnce({
+        content: '{"recommendations":[{"index":1,"title":"Stalker","release_year":1979}',
+        provider: 'google',
+        model: 'gemini-2.5-flash-lite',
+        responseMode: 'json_schema',
+      })
+      .mockResolvedValueOnce({
+        content: JSON.stringify({
           recommendations: [{ index: 1, title: 'Stalker', release_year: 1979 }],
-        })
-      )
+        }),
+        provider: 'google',
+        model: 'gemini-2.0-flash',
+        responseMode: 'json_schema',
+      })
 
     const result = await getRecommendationsFromPlatformAi(
       [{ tmdbId: 1, title: 'Alien', year: 1979 }],
@@ -662,19 +683,32 @@ describe('getRecommendationsFromPlatformAi', () => {
         tmdbId: 1398,
       },
     ])
-    expect(askPlatformAiMock).toHaveBeenCalledTimes(2)
-    expect(askPlatformAiMock.mock.calls[1]?.[0]).toEqual(
+    expect(askPlatformAiResponseMock).toHaveBeenCalledTimes(2)
+    expect(askPlatformAiResponseMock.mock.calls[1]?.[0]).toEqual(
       expect.objectContaining({
         userMessage: expect.stringContaining('Recommend exactly 30 candidate movies'),
       })
     )
+    expect(askPlatformAiResponseMock.mock.calls[1]?.[1]).toEqual({
+      excludedModels: [{ provider: 'google', model: 'gemini-2.5-flash-lite' }],
+    })
   })
 
-  it('preserves the original error when the initial retry also fails', async () => {
+  it('preserves the original parse error when the retry also fails', async () => {
     setupSearchRows([])
-    askPlatformAiMock
-      .mockResolvedValueOnce('{"recommendations":[{"index":1,"title":"Stalker","release_year":1979}')
-      .mockResolvedValueOnce('{"recommendations":[{"index":1,"title":"Solaris","release_year":1972}')
+    askPlatformAiResponseMock
+      .mockResolvedValueOnce({
+        content: '{"recommendations":[{"index":1,"title":"Stalker","release_year":1979}',
+        provider: 'google',
+        model: 'gemini-2.5-flash-lite',
+        responseMode: 'json_schema',
+      })
+      .mockResolvedValueOnce({
+        content: '{"recommendations":[{"index":1,"title":"Solaris","release_year":1972}',
+        provider: 'google',
+        model: 'gemini-2.0-flash',
+        responseMode: 'json_schema',
+      })
 
     await expect(
       getRecommendationsFromPlatformAi([{ tmdbId: 1, title: 'Alien', year: 1979 }], [], 'user-1')
@@ -683,7 +717,45 @@ describe('getRecommendationsFromPlatformAi', () => {
       statusMessage: 'Unable to generate recommendations right now.',
     })
 
-    expect(askPlatformAiMock).toHaveBeenCalledTimes(2)
+    expect(askPlatformAiResponseMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('logs provider metadata when the winning model returns malformed JSON', async () => {
+    setupSearchRows([])
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    askPlatformAiResponseMock
+      .mockResolvedValueOnce({
+        content: '{"recommendations":[{"index":1,"title":"Stalker","release_year":1979}',
+        provider: 'google',
+        model: 'gemini-2.5-flash-lite',
+        responseMode: 'json_schema',
+      })
+      .mockResolvedValueOnce({
+        content: '{"recommendations":[{"index":1,"title":"Solaris","release_year":1972}',
+        provider: 'google',
+        model: 'gemini-2.0-flash',
+        responseMode: 'json_schema',
+      })
+
+    await expect(
+      getRecommendationsFromPlatformAi([{ tmdbId: 1, title: 'Alien', year: 1979 }], [], 'user-1')
+    ).rejects.toMatchObject({
+      statusCode: 502,
+    })
+
+    const loggedMessage = consoleErrorSpy.mock.calls[0]?.[0]
+    if (typeof loggedMessage !== 'string') {
+      throw new Error('Expected parse failure to log a JSON string')
+    }
+
+    expect(JSON.parse(loggedMessage) as unknown).toMatchObject({
+      event: 'recommendation.ai_provider_parse_failed',
+      extra: {
+        provider: 'google',
+        model: 'gemini-2.5-flash-lite',
+        responseMode: 'json_schema',
+      },
+    })
   })
 
   it('builds a compact prompt with representative watched, top watched, and My List reminders', () => {

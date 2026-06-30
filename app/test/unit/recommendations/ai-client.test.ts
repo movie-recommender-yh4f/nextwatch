@@ -28,7 +28,7 @@ vi.mock('../../../server/utils/recommendations/rate-limit', () => ({
   RECOMMENDATION_LIMIT: 20,
 }))
 
-const { askPlatformAi, createPlatformAiProviderConfig, parseProviderModels } = await import(
+const { askPlatformAi, askPlatformAiResponse, createPlatformAiProviderConfig, parseProviderModels } = await import(
   '../../../server/utils/recommendations/ai-client'
 )
 
@@ -104,6 +104,26 @@ describe('askPlatformAi', () => {
     )
   })
 
+  it('returns provider and model metadata with the completion content', async () => {
+    setupRuntimeConfig()
+    createCompletionMock.mockResolvedValue({
+      choices: [{ message: { content: '{"recommendations":[]}' } }],
+    })
+
+    await expect(
+      askPlatformAiResponse({
+        systemPrompt: 'system',
+        userMessage: 'user',
+        schema: { type: 'object' },
+      })
+    ).resolves.toEqual({
+      content: '{"recommendations":[]}',
+      provider: 'google',
+      model: 'gemini-2.5-flash-lite',
+      responseMode: 'json_schema',
+    })
+  })
+
   it('can skip recommendation rate limiting for internal follow-up rounds', async () => {
     setupRuntimeConfig()
     createCompletionMock.mockResolvedValue({
@@ -155,5 +175,37 @@ describe('askPlatformAi', () => {
         },
       ],
     })
+  })
+
+  it('skips excluded provider-model pairs when choosing the next attempt', async () => {
+    setupRuntimeConfig()
+    Object.assign(globalThis, {
+      useRuntimeConfig: vi.fn(() => ({
+        googleApiKey: 'google-key',
+        googleModels: 'gemini-2.5-flash-lite,gemini-2.0-flash',
+        openRouterApiKey: 'openrouter-key',
+        openRouterModels: 'google/gemini-2.5-flash-lite',
+      })),
+    })
+    createCompletionMock.mockResolvedValue({
+      choices: [{ message: { content: '{"recommendations":[]}' } }],
+    })
+
+    await askPlatformAiResponse(
+      {
+        systemPrompt: 'system',
+        userMessage: 'user',
+        schema: { type: 'object' },
+      },
+      {
+        excludedModels: [{ provider: 'google', model: 'gemini-2.5-flash-lite' }],
+      }
+    )
+
+    expect(createCompletionMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        model: 'gemini-2.0-flash',
+      })
+    )
   })
 })

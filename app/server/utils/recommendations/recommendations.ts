@@ -1,6 +1,6 @@
 import type { H3Event } from 'h3'
-import { askPlatformAi } from './ai-client'
-import type { PlatformAiMessage } from './ai-client'
+import { askPlatformAi, askPlatformAiResponse } from './ai-client'
+import type { PlatformAiMessage, PlatformAiResponse } from './ai-client'
 import {
   INITIAL_RECOMMENDATION_RETRY_COUNT,
   MAX_RECOMMENDATION_ROUNDS,
@@ -24,6 +24,7 @@ import {
   toBlockedExcludedRecommendations,
   validateRecommendationBatch,
 } from './recommendation-validation'
+import { logPrivateError, logPrivateInfo } from '../shared/api-error'
 import type {
   IndexedRecommendationWithId,
   InitialModelRecommendation,
@@ -49,6 +50,26 @@ interface InitialRecommendationRequest {
   systemPrompt: string
   userMessage: string
   messages: PlatformAiMessage[]
+}
+
+function toResponseMetadata(response: PlatformAiResponse) {
+  return {
+    provider: response.provider,
+    model: response.model,
+    responseMode: response.responseMode,
+  }
+}
+
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message
+  }
+
+  if (typeof error === 'object' && error !== null && typeof (error as { message?: unknown }).message === 'string') {
+    return (error as { message: string }).message
+  }
+
+  return 'Unknown recommendation error'
 }
 
 function buildInitialRecommendationRequest(
@@ -78,10 +99,16 @@ function buildInitialRecommendationRequest(
 
 async function requestInitialRecommendationRaw(
   request: InitialRecommendationRequest,
+  options?: {
+    excludedModels?: Array<{
+      provider: PlatformAiResponse['provider']
+      model: string
+    }>
+  },
   userId?: string,
   event?: H3Event
-): Promise<string> {
-  return askPlatformAi({
+): Promise<PlatformAiResponse> {
+  return askPlatformAiResponse({
     systemPrompt: request.systemPrompt,
     userMessage: request.userMessage,
     messages: [...request.messages],
@@ -89,7 +116,7 @@ async function requestInitialRecommendationRaw(
     schemaName: 'movie_recommendations',
     userId,
     event,
-  })
+  }, options)
 }
 
 async function fetchInitialRecommendations(
@@ -109,33 +136,99 @@ async function fetchInitialRecommendations(
     myListMovies,
     excludedMovies
   )
-  const initialRaw = await requestInitialRecommendationRaw(initialRequest, userId, event)
+  const initialResponse = await requestInitialRecommendationRaw(initialRequest, undefined, userId, event)
 
   try {
     return {
       systemPrompt: initialRequest.systemPrompt,
       userMessage: initialRequest.userMessage,
-      raw: initialRaw,
-      parsed: parseInitialRecommendationResponse(initialRaw, userId, event),
+      raw: initialResponse.content,
+      parsed: parseInitialRecommendationResponse(
+        initialResponse.content,
+        {
+          event,
+          responseMetadata: toResponseMetadata(initialResponse),
+          suppressLogging: true,
+          userId,
+        }
+      ),
     }
-  } catch (error) {
+  } catch (firstError) {
     const retryRequest = buildInitialRecommendationRequest(
       watchedMovies,
       myListMovies,
       excludedMovies,
       INITIAL_RECOMMENDATION_RETRY_COUNT
     )
-    const retryRaw = await requestInitialRecommendationRaw(retryRequest, userId, event)
+    const retryResponse = await requestInitialRecommendationRaw(
+      retryRequest,
+      {
+        excludedModels: [
+          {
+            provider: initialResponse.provider,
+            model: initialResponse.model,
+          },
+        ],
+      },
+      userId,
+      event
+    )
 
     try {
+      const parsed = parseInitialRecommendationResponse(
+        retryResponse.content,
+        {
+          event,
+          responseMetadata: toResponseMetadata(retryResponse),
+          suppressLogging: true,
+          userId,
+        }
+      )
+
+      logPrivateInfo({
+        event: 'recommendation.ai_provider_response_recovered',
+        source: 'ai_provider',
+        statusCode: 200,
+        route: event?.path,
+        method: event?.method,
+        userId,
+        extra: {
+          initialAttempt: {
+            errorMessage: getErrorMessage(firstError),
+            ...toResponseMetadata(initialResponse),
+          },
+          retryAttempt: toResponseMetadata(retryResponse),
+        },
+      })
+
       return {
         systemPrompt: retryRequest.systemPrompt,
         userMessage: retryRequest.userMessage,
-        raw: retryRaw,
-        parsed: parseInitialRecommendationResponse(retryRaw, userId, event),
+        raw: retryResponse.content,
+        parsed,
       }
-    } catch {
-      throw error
+    } catch (retryError) {
+      logPrivateError({
+        cause: firstError,
+        event: 'recommendation.ai_provider_response_invalid_after_retry',
+        source: 'ai_provider',
+        statusCode: 502,
+        route: event?.path,
+        method: event?.method,
+        userId,
+        extra: {
+          initialAttempt: {
+            errorMessage: getErrorMessage(firstError),
+            ...toResponseMetadata(initialResponse),
+          },
+          retryAttempt: {
+            errorMessage: getErrorMessage(retryError),
+            ...toResponseMetadata(retryResponse),
+          },
+        },
+      })
+
+      throw firstError
     }
   }
 }

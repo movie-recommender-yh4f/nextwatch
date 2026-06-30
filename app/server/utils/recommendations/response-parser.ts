@@ -14,17 +14,45 @@ interface RecommendationObjectResponse {
   recommendations: unknown
 }
 
+interface ProviderResponseMetadata {
+  provider: 'google' | 'openrouter'
+  model: string
+  responseMode: 'json_schema'
+}
+
+interface RecommendationParseContext {
+  event?: H3Event
+  responseMetadata?: ProviderResponseMetadata
+  suppressLogging?: boolean
+  userId?: string
+}
+
 function throwPlatformAiRecommendationError(
   cause: unknown,
   logEvent: string,
   context: {
     event?: H3Event
+    suppressLogging?: boolean
     userId?: string
     statusCode: number
     extra?: Record<string, unknown>
   }
 ): never {
-  const { event, userId, statusCode, extra } = context
+  const { event, suppressLogging = false, userId, statusCode, extra } = context
+
+  if (suppressLogging) {
+    throw Object.assign(
+      createError({
+        statusCode,
+        statusMessage: GENERATE_RECOMMENDATIONS_MESSAGE,
+      }),
+      {
+        cause,
+        event: logEvent,
+        extra,
+      }
+    )
+  }
 
   if (event) {
     throwAiProviderError(event, cause, {
@@ -129,7 +157,8 @@ function normalizeRecommendationPayload(value: unknown): unknown {
 function createParseFailureLogExtra(
   raw: string,
   responseSchema: Record<string, unknown>,
-  responseSchemaName: string
+  responseSchemaName: string,
+  responseMetadata?: ProviderResponseMetadata
 ): Record<string, unknown> {
   return {
     providedResponse: raw.slice(0, AI_RESPONSE_LOG_PREVIEW_LENGTH),
@@ -137,6 +166,7 @@ function createParseFailureLogExtra(
     providedResponseTruncated: raw.length > AI_RESPONSE_LOG_PREVIEW_LENGTH,
     expectedResponseSchemaName: responseSchemaName,
     expectedResponseSchema: responseSchema,
+    ...(responseMetadata && responseMetadata),
   }
 }
 
@@ -144,9 +174,9 @@ function parseJsonRecommendationResponse(
   raw: string,
   responseSchema: Record<string, unknown>,
   responseSchemaName: string,
-  userId?: string,
-  event?: H3Event
+  context: RecommendationParseContext = {}
 ): unknown {
+  const { event, responseMetadata, suppressLogging, userId } = context
   let parsed: unknown
 
   try {
@@ -154,21 +184,25 @@ function parseJsonRecommendationResponse(
   } catch (error) {
     throwPlatformAiRecommendationError(error, 'recommendation.ai_provider_parse_failed', {
       event,
+      suppressLogging,
       userId,
       statusCode: 502,
-      extra: createParseFailureLogExtra(raw, responseSchema, responseSchemaName),
+      extra: createParseFailureLogExtra(raw, responseSchema, responseSchemaName, responseMetadata),
     })
   }
 
   return normalizeRecommendationPayload(parsed)
 }
 
-function throwRecommendationSchemaError(userId?: string, event?: H3Event): never {
+function throwRecommendationSchemaError(context: RecommendationParseContext = {}): never {
+  const { event, suppressLogging, userId } = context
+
   throwPlatformAiRecommendationError(
     new Error('AI provider response did not match the expected recommendation schema.'),
     'recommendation.ai_provider_schema_failed',
     {
       event,
+      suppressLogging,
       userId,
       statusCode: 502,
     }
@@ -177,19 +211,17 @@ function throwRecommendationSchemaError(userId?: string, event?: H3Event): never
 
 export function parseInitialRecommendationResponse(
   raw: string,
-  userId?: string,
-  event?: H3Event
+  context: RecommendationParseContext = {}
 ): InitialModelRecommendation[] {
   const normalized = parseJsonRecommendationResponse(
     raw,
     RECOMMENDATION_RESPONSE_SCHEMA,
     'movie_recommendations',
-    userId,
-    event
+    context
   )
 
   if (!isInitialModelRecommendationArray(normalized)) {
-    throwRecommendationSchemaError(userId, event)
+    throwRecommendationSchemaError(context)
   }
 
   return normalized
@@ -197,19 +229,17 @@ export function parseInitialRecommendationResponse(
 
 export function parseReplacementRecommendationResponse(
   raw: string,
-  userId?: string,
-  event?: H3Event
+  context: RecommendationParseContext = {}
 ): ReplacementModelRecommendation[] {
   const normalized = parseJsonRecommendationResponse(
     raw,
     REPLACEMENT_RESPONSE_SCHEMA,
     'movie_recommendation_replacements',
-    userId,
-    event
+    context
   )
 
   if (!isReplacementModelRecommendationArray(normalized)) {
-    throwRecommendationSchemaError(userId, event)
+    throwRecommendationSchemaError(context)
   }
 
   return normalized

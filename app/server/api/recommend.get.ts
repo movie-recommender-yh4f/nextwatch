@@ -386,13 +386,11 @@ export default defineEventHandler(async (event) => {
         throw createInsufficientRecommendationsError()
       }
     } catch (error) {
-      if (cacheState.storedRecommendationIds.length === 0) {
-        throw error
-      }
-
       logPrivateError({
         cause: error,
-        event: 'recommendation.regeneration_failed',
+        event: cacheState.storedRecommendationIds.length === 0
+          ? 'recommendation.generation_failed'
+          : 'recommendation.regeneration_failed',
         source: 'ai_provider',
         statusCode: getErrorStatusCode(error),
         userId: user.id,
@@ -402,8 +400,14 @@ export default defineEventHandler(async (event) => {
           staleRecommendationCount: cacheState.storedRecommendationIds.length,
           refresh: isRefresh,
           getNew: isGetNew,
+          hasStaleFallback: cacheState.storedRecommendationIds.length > 0,
+          errorStatusMessage: getErrorStatusMessage(error),
         },
       })
+
+      if (cacheState.storedRecommendationIds.length === 0) {
+        throw error
+      }
 
       return buildRegenerationFallbackResponse(error, cacheState.storedRecommendationIds)
     }

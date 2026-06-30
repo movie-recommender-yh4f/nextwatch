@@ -694,8 +694,11 @@ describe('getRecommendationsFromPlatformAi', () => {
     })
   })
 
-  it('preserves the original parse error when the retry also fails', async () => {
-    setupSearchRows([])
+  it('recovers partial recommendations when both initial responses are malformed', async () => {
+    setupSearchRows([
+      { title: 'Stalker', year: 1979, tmdbId: 1398 },
+      { title: 'Solaris', year: 1972, tmdbId: 1399 },
+    ])
     askPlatformAiResponseMock
       .mockResolvedValueOnce({
         content: '{"recommendations":[{"index":1,"title":"Stalker","release_year":1979}',
@@ -710,19 +713,25 @@ describe('getRecommendationsFromPlatformAi', () => {
         responseMode: 'json_schema',
       })
 
-    await expect(
-      getRecommendationsFromPlatformAi([{ tmdbId: 1, title: 'Alien', year: 1979 }], [], 'user-1')
-    ).rejects.toMatchObject({
-      statusCode: 502,
-      statusMessage: 'Unable to generate recommendations right now.',
-    })
+    const result = await getRecommendationsFromPlatformAi(
+      [{ tmdbId: 1, title: 'Alien', year: 1979 }],
+      [],
+      'user-1'
+    )
 
+    expect(result.recommendations.map((recommendation) => recommendation.tmdbId)).toEqual([
+      1398,
+      1399,
+    ])
     expect(askPlatformAiResponseMock).toHaveBeenCalledTimes(2)
   })
 
-  it('logs provider metadata when the winning model returns malformed JSON', async () => {
-    setupSearchRows([])
-    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+  it('logs provider metadata when partial recommendation recovery succeeds', async () => {
+    setupSearchRows([
+      { title: 'Stalker', year: 1979, tmdbId: 1398 },
+      { title: 'Solaris', year: 1972, tmdbId: 1399 },
+    ])
+    const consoleInfoSpy = vi.spyOn(console, 'info').mockImplementation(() => undefined)
     askPlatformAiResponseMock
       .mockResolvedValueOnce({
         content: '{"recommendations":[{"index":1,"title":"Stalker","release_year":1979}',
@@ -737,23 +746,35 @@ describe('getRecommendationsFromPlatformAi', () => {
         responseMode: 'json_schema',
       })
 
-    await expect(
-      getRecommendationsFromPlatformAi([{ tmdbId: 1, title: 'Alien', year: 1979 }], [], 'user-1')
-    ).rejects.toMatchObject({
-      statusCode: 502,
-    })
+    await getRecommendationsFromPlatformAi(
+      [{ tmdbId: 1, title: 'Alien', year: 1979 }],
+      [],
+      'user-1'
+    )
 
-    const loggedMessage = consoleErrorSpy.mock.calls[0]?.[0]
+    const loggedMessage = consoleInfoSpy.mock.calls.find(
+      (call) =>
+        typeof call[0] === 'string' &&
+        (JSON.parse(call[0]) as { event?: string }).event ===
+          'recommendation.ai_provider_partial_response_recovered'
+    )?.[0]
     if (typeof loggedMessage !== 'string') {
-      throw new Error('Expected parse failure to log a JSON string')
+      throw new Error('Expected partial recovery to log a JSON string')
     }
 
     expect(JSON.parse(loggedMessage) as unknown).toMatchObject({
-      event: 'recommendation.ai_provider_parse_failed',
+      event: 'recommendation.ai_provider_partial_response_recovered',
       extra: {
-        provider: 'google',
-        model: 'gemini-2.5-flash-lite',
-        responseMode: 'json_schema',
+        initialAttempt: {
+          provider: 'google',
+          model: 'gemini-2.5-flash-lite',
+          responseMode: 'json_schema',
+        },
+        retryAttempt: {
+          provider: 'google',
+          model: 'gemini-2.0-flash',
+          responseMode: 'json_schema',
+        },
       },
     })
   })

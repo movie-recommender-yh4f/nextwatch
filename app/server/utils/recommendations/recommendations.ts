@@ -72,6 +72,46 @@ function getErrorMessage(error: unknown): string {
   return 'Unknown recommendation error'
 }
 
+function mergeRecoveredRecommendations(
+  ...recommendationLists: InitialModelRecommendation[][]
+): InitialModelRecommendation[] {
+  const mergedRecommendations: InitialModelRecommendation[] = []
+  const seenRecommendations = new Set<string>()
+
+  for (const recommendations of recommendationLists) {
+    for (const recommendation of recommendations) {
+      const recommendationKey = `${recommendation.index}:${recommendation.title}:${recommendation.release_year ?? 'null'}`
+
+      if (seenRecommendations.has(recommendationKey)) {
+        continue
+      }
+
+      seenRecommendations.add(recommendationKey)
+      mergedRecommendations.push(recommendation)
+    }
+  }
+
+  return mergedRecommendations
+}
+
+function safelyRecoverInitialRecommendations(
+  raw: string,
+  response: PlatformAiResponse,
+  userId?: string,
+  event?: H3Event
+): InitialModelRecommendation[] {
+  try {
+    return parseInitialRecommendationResponse(raw, {
+      event,
+      responseMetadata: toResponseMetadata(response),
+      suppressLogging: true,
+      userId,
+    })
+  } catch {
+    return []
+  }
+}
+
 function buildInitialRecommendationRequest(
   watchedMovies: WatchedMovieRecord[],
   myListMovies: WatchedMovieRecord[],
@@ -146,6 +186,7 @@ async function fetchInitialRecommendations(
       parsed: parseInitialRecommendationResponse(
         initialResponse.content,
         {
+          allowPartialRecovery: false,
           event,
           responseMetadata: toResponseMetadata(initialResponse),
           suppressLogging: true,
@@ -178,6 +219,7 @@ async function fetchInitialRecommendations(
       const parsed = parseInitialRecommendationResponse(
         retryResponse.content,
         {
+          allowPartialRecovery: false,
           event,
           responseMetadata: toResponseMetadata(retryResponse),
           suppressLogging: true,
@@ -208,6 +250,56 @@ async function fetchInitialRecommendations(
         parsed,
       }
     } catch (retryError) {
+      const recoveredInitialRecommendations = safelyRecoverInitialRecommendations(
+        initialResponse.content,
+        initialResponse,
+        userId,
+        event
+      )
+      const recoveredRetryRecommendations = safelyRecoverInitialRecommendations(
+        retryResponse.content,
+        retryResponse,
+        userId,
+        event
+      )
+      const recoveredRecommendations = mergeRecoveredRecommendations(
+        recoveredInitialRecommendations,
+        recoveredRetryRecommendations
+      )
+
+      if (recoveredRecommendations.length > 0) {
+        const recoveredRaw = JSON.stringify({ recommendations: recoveredRecommendations })
+
+        logPrivateInfo({
+          event: 'recommendation.ai_provider_partial_response_recovered',
+          source: 'ai_provider',
+          statusCode: 200,
+          route: event?.path,
+          method: event?.method,
+          userId,
+          extra: {
+            initialAttempt: {
+              errorMessage: getErrorMessage(firstError),
+              recoveredRecommendationCount: recoveredInitialRecommendations.length,
+              ...toResponseMetadata(initialResponse),
+            },
+            retryAttempt: {
+              errorMessage: getErrorMessage(retryError),
+              recoveredRecommendationCount: recoveredRetryRecommendations.length,
+              ...toResponseMetadata(retryResponse),
+            },
+            mergedRecoveredRecommendationCount: recoveredRecommendations.length,
+          },
+        })
+
+        return {
+          systemPrompt: retryRequest.systemPrompt,
+          userMessage: retryRequest.userMessage,
+          raw: recoveredRaw,
+          parsed: recoveredRecommendations,
+        }
+      }
+
       logPrivateError({
         cause: firstError,
         event: 'recommendation.ai_provider_response_invalid_after_retry',
@@ -414,7 +506,10 @@ export async function getRecommendationsFromPlatformAi(
       content: replacementRaw,
     })
 
-    const replacements = parseReplacementRecommendationResponse(replacementRaw, userId, event)
+    const replacements = parseReplacementRecommendationResponse(replacementRaw, {
+      event,
+      userId,
+    })
     aiCandidateCount += replacements.length
     const replacementResult = await resolveReplacementRecommendations(replacements, event)
     tmdbFallbackCount += replacementResult.tmdbFallbackCount

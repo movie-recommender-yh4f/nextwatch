@@ -6,7 +6,7 @@ import type {
   ReplacementModelRecommendation,
 } from './types'
 import { RECOMMENDATION_RESPONSE_SCHEMA, REPLACEMENT_RESPONSE_SCHEMA } from './prompts'
-import { logPrivateError, throwAiProviderError } from '../shared/api-error'
+import { logPrivateError, logPrivateInfo, throwAiProviderError } from '../shared/api-error'
 
 const AI_RESPONSE_LOG_PREVIEW_LENGTH = 8000
 
@@ -21,6 +21,7 @@ interface ProviderResponseMetadata {
 }
 
 interface RecommendationParseContext {
+  allowPartialRecovery?: boolean
   event?: H3Event
   responseMetadata?: ProviderResponseMetadata
   suppressLogging?: boolean
@@ -170,18 +171,140 @@ function createParseFailureLogExtra(
   }
 }
 
+function findRecommendationArrayStart(raw: string): number {
+  const wrappedArrayStart = raw.indexOf('[', raw.indexOf('"recommendations"'))
+  if (wrappedArrayStart >= 0) {
+    return wrappedArrayStart
+  }
+
+  return raw.indexOf('[')
+}
+
+function extractCompleteRecommendationItems(raw: string): unknown[] {
+  const arrayStart = findRecommendationArrayStart(raw)
+
+  if (arrayStart < 0) {
+    return []
+  }
+
+  const items: unknown[] = []
+  let inString = false
+  let isEscaped = false
+  let objectDepth = 0
+  let objectStart = -1
+
+  for (let index = arrayStart + 1; index < raw.length; index++) {
+    const character = raw[index]
+
+    if (isEscaped) {
+      isEscaped = false
+      continue
+    }
+
+    if (character === '\\') {
+      isEscaped = true
+      continue
+    }
+
+    if (character === '"') {
+      inString = !inString
+      continue
+    }
+
+    if (inString) {
+      continue
+    }
+
+    if (character === '{') {
+      if (objectDepth === 0) {
+        objectStart = index
+      }
+
+      objectDepth++
+      continue
+    }
+
+    if (character === '}') {
+      if (objectDepth === 0 || objectStart < 0) {
+        continue
+      }
+
+      objectDepth--
+
+      if (objectDepth === 0) {
+        const objectText = raw.slice(objectStart, index + 1)
+
+        try {
+          items.push(JSON.parse(objectText))
+        } catch {
+          return items
+        }
+
+        objectStart = -1
+      }
+    }
+  }
+
+  return items
+}
+
+function recoverMalformedRecommendationPayload(
+  raw: string,
+  responseSchemaName: string,
+  context: RecommendationParseContext
+): unknown[] | null {
+  const recoveredItems = extractCompleteRecommendationItems(raw)
+
+  if (recoveredItems.length === 0) {
+    return null
+  }
+
+  if (!context.suppressLogging) {
+    logPrivateInfo({
+      event: 'recommendation.ai_provider_partial_response_recovered',
+      source: 'ai_provider',
+      statusCode: 200,
+      route: context.event?.path,
+      method: context.event?.method,
+      userId: context.userId,
+      extra: {
+        expectedResponseSchemaName: responseSchemaName,
+        providedResponseLength: raw.length,
+        recoveredRecommendationCount: recoveredItems.length,
+        ...(context.responseMetadata && context.responseMetadata),
+      },
+    })
+  }
+
+  return recoveredItems
+}
+
 function parseJsonRecommendationResponse(
   raw: string,
   responseSchema: Record<string, unknown>,
   responseSchemaName: string,
   context: RecommendationParseContext = {}
 ): unknown {
-  const { event, responseMetadata, suppressLogging, userId } = context
+  const {
+    allowPartialRecovery = true,
+    event,
+    responseMetadata,
+    suppressLogging,
+    userId,
+  } = context
   let parsed: unknown
 
   try {
     parsed = JSON.parse(raw)
   } catch (error) {
+    const recoveredPayload = allowPartialRecovery
+      ? recoverMalformedRecommendationPayload(raw, responseSchemaName, context)
+      : null
+
+    if (recoveredPayload) {
+      return recoveredPayload
+    }
+
     throwPlatformAiRecommendationError(error, 'recommendation.ai_provider_parse_failed', {
       event,
       suppressLogging,
